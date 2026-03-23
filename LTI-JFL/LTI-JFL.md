@@ -680,6 +680,244 @@ The MVP should focus on the parts of the product most central to the wedge.
 
 ---
 
+
+## 5. Top 3 use cases and UML diagrams
+
+### 5.1 Assumptions
+
+- The scope is based on the selected LTI direction: a **collaboration-first, automation-heavy, AI-assisted full-cycle Applicant Tracking System (ATS)** for **employer-side mid-market knowledge-work companies**.
+- The product is at **MVP / early implementation-reference stage**, so the goal is to model only the interactions required to validate the core business workflow.
+- The minimum valuable workflow is: **open a role -> receive applications -> evaluate candidates collaboratively -> record a hiring decision**.
+- Offer management, onboarding handoff, advanced analytics, admin setup, and support workflows are important, but they are **not part of the top 3 use cases** to keep the model lean.
+- AI is **assistive and human-in-the-loop**, not an autonomous decision-maker.
+- The main actors relevant to these 3 use cases are: **Recruiter, Hiring Manager, Candidate, Interviewer**, plus supporting system actors such as **Calendar Service** and **Notification Service** where useful to clarify dependencies.
+
+### 5.2 Top 3 use cases
+
+#### Use Case 1 — Open a structured requisition
+- **Purpose:** Establish a role, align recruiter and hiring manager on what success looks like, and make the job ready to receive applications.
+- **Primary actor(s):** Recruiter
+- **Supporting actor(s):** Hiring Manager
+- **Preconditions:**
+  - The company account and hiring team exist.
+  - The recruiter has permission to create requisitions.
+  - The hiring manager is identified for the role.
+- **Main flow:**
+  1. Recruiter starts a new requisition.
+  2. Recruiter and hiring manager define the role requirements and business need.
+  3. They agree on core evaluation criteria.
+  4. The recruiter configures the hiring plan, scorecard, and interview structure.
+  5. The recruiter assigns the hiring team and approval path.
+  6. The requisition is submitted for approval.
+  7. Once approved, the role is published and can accept applications.
+- **Dependencies:**
+  - Role requirements must be defined before scorecards and interview plans are meaningful.
+  - Approval must occur before publishing.
+- **Postconditions:**
+  - A published requisition exists.
+  - The hiring plan, evaluation criteria, and team responsibilities are set.
+- **Why it is a top-3 use case:** This is the foundation of the product’s strategic wedge. Without structured requisition setup, collaboration, automation, and AI later in the workflow lose context and consistency.
+
+#### Use Case 2 — Submit application and create candidate profile
+- **Purpose:** Allow a candidate to apply with low friction while giving the hiring team a structured candidate record.
+- **Primary actor(s):** Candidate
+- **Supporting actor(s):** None required for initiation; Recruiter consumes the output later.
+- **Preconditions:**
+  - A requisition has already been opened and published.
+  - The candidate can access the application entry point.
+- **Main flow:**
+  1. Candidate opens the job application.
+  2. Candidate uploads a CV or resume.
+  3. The system extracts candidate data from the CV.
+  4. Candidate confirms or corrects extracted information.
+  5. Candidate answers role-specific questions, if required.
+  6. Candidate submits the application.
+  7. The system creates a structured candidate profile and acknowledges submission.
+- **Dependencies:**
+  - Depends on Use Case 1 because a published requisition must already exist.
+  - Candidate profile generation depends on successful application submission.
+- **Postconditions:**
+  - A candidate profile is created and linked to the requisition.
+  - Candidate information is stored in a recruiter-usable format.
+- **Why it is a top-3 use case:** No ATS provides value without intake. For LTI specifically, this use case also captures an important differentiator: **signal-rich, low-friction candidate intake**.
+
+#### Use Case 3 — Collaboratively evaluate candidate and record decision
+- **Purpose:** Help the hiring team review a candidate, coordinate interviews, collect feedback, and reach a documented hiring decision.
+- **Primary actor(s):** Recruiter
+- **Supporting actor(s):** Hiring Manager, Interviewer, Calendar Service, Notification Service
+- **Preconditions:**
+  - A structured requisition exists.
+  - At least one candidate profile exists for that requisition.
+  - Evaluation criteria and interview plan are already configured.
+- **Main flow:**
+  1. Recruiter opens the candidate profile.
+  2. The system generates an AI-assisted candidate summary and requirement-to-evidence view.
+  3. Recruiter reviews the candidate and requests manager review.
+  4. Hiring manager reviews the candidate and decides whether to proceed.
+  5. If progressing, the recruiter initiates the interview loop.
+  6. The system coordinates scheduling and sends notifications.
+  7. Interviewers conduct interviews and submit structured feedback.
+  8. Recruiter and hiring manager run a structured debrief.
+  9. The team records the hiring decision in the system.
+  10. The system sends the appropriate status update and updates the pipeline.
+- **Dependencies:**
+  - Depends on Use Case 1 for role criteria, scorecards, and interview structure.
+  - Depends on Use Case 2 for the candidate profile.
+  - Interview feedback depends on successful scheduling and interviewer participation.
+- **Postconditions:**
+  - A hiring decision is recorded for the candidate.
+  - The decision rationale and feedback trail are stored.
+  - The pipeline status is updated.
+- **Why it is a top-3 use case:** This is where LTI’s main value proposition becomes real: **collaboration layer + automation layer + AI assistance layer** working together in one workflow.
+
+### 5.3 Diagram for each use case
+
+#### Diagram 1 — Open a structured requisition
+This diagram represents the collaboration between recruiter and hiring manager to define a role, configure the hiring framework, route approval, and publish the job.
+
+```plantuml
+@startuml
+left to right direction
+
+actor Recruiter
+actor "Hiring Manager" as HiringManager
+
+rectangle "LTI ATS" {
+  usecase "Open Structured Requisition" as UC1
+  usecase "Define Role Requirements" as UC11
+  usecase "Configure Scorecard\nand Interview Plan" as UC12
+  usecase "Assign Hiring Team" as UC13
+  usecase "Route Requisition\nfor Approval" as UC14
+  usecase "Publish Approved Job" as UC15
+
+  UC1 --> UC11 : <<include>>
+  UC1 --> UC12 : <<include>>
+  UC1 --> UC13 : <<include>>
+  UC1 --> UC14 : <<include>>
+  UC1 --> UC15 : <<include>>
+}
+
+Recruiter --> UC1
+Recruiter --> UC14
+HiringManager --> UC11
+HiringManager --> UC12
+HiringManager --> UC13
+@enduml
+```
+
+#### Diagram 2 — Submit application and create candidate profile
+This diagram represents the candidate-side intake flow. It shows how LTI reduces friction by extracting data from the CV, asking for confirmation, and creating a structured profile.
+
+```plantuml
+@startuml
+left to right direction
+
+actor Candidate
+
+rectangle "LTI ATS" {
+  usecase "Submit Application\nand Create Candidate Profile" as UC2
+  usecase "Upload CV / Resume" as UC21
+  usecase "Extract Candidate Data" as UC22
+  usecase "Confirm / Edit\nExtracted Information" as UC23
+  usecase "Answer Role-Specific\nQuestions" as UC24
+  usecase "Create Candidate Profile" as UC25
+  usecase "Save Draft Application" as UC26
+
+  UC2 --> UC21 : <<include>>
+  UC2 --> UC22 : <<include>>
+  UC2 --> UC23 : <<include>>
+  UC2 --> UC24 : <<include>>
+  UC2 --> UC25 : <<include>>
+  UC26 ..> UC2 : <<extend>>
+}
+
+Candidate --> UC2
+Candidate --> UC26
+@enduml
+```
+
+#### Diagram 3 — Collaboratively evaluate candidate and record decision
+This diagram represents the core collaborative ATS workflow: recruiter review, manager review, interview coordination, structured feedback, debrief, and final decision. It also shows where automation and AI assistance support the process.
+
+```plantuml
+@startuml
+left to right direction
+
+actor Recruiter
+actor "Hiring Manager" as HiringManager
+actor Interviewer
+actor "Calendar Service" as CalendarService
+actor "Notification Service" as NotificationService
+
+rectangle "LTI ATS" {
+  usecase "Collaboratively Evaluate Candidate\nand Record Decision" as UC3
+  usecase "Generate AI Candidate Summary" as UC31
+  usecase "Request Manager Review" as UC32
+  usecase "Plan and Schedule Interviews" as UC33
+  usecase "Collect Structured Feedback" as UC34
+  usecase "Run Structured Debrief" as UC35
+  usecase "Record Hiring Decision" as UC36
+  usecase "Send Reminders\nand Status Updates" as UC37
+
+  UC3 --> UC31 : <<include>>
+  UC3 --> UC32 : <<include>>
+  UC3 --> UC33 : <<include>>
+  UC3 --> UC34 : <<include>>
+  UC3 --> UC35 : <<include>>
+  UC3 --> UC36 : <<include>>
+  UC3 --> UC37 : <<include>>
+}
+
+Recruiter --> UC3
+HiringManager --> UC32
+HiringManager --> UC35
+Interviewer --> UC34
+CalendarService --> UC33
+NotificationService --> UC37
+@enduml
+```
+
+### 5.4 Validation notes
+
+These 3 use cases are **sufficient for a first useful version** of LTI if the goal is to validate the core end-to-end recruiting loop for the selected market:
+
+1. define a role collaboratively,
+2. receive structured candidate input,
+3. evaluate candidates collaboratively and reach a decision.
+
+That is enough to prove the central product thesis of LTI:
+- structured hiring,
+- recruiter-manager collaboration,
+- workflow automation,
+- and practical AI assistance.
+
+#### Important use cases intentionally excluded to remain lean
+The following were excluded on purpose:
+- offer generation and offer approval
+- onboarding / HRIS handoff
+- admin / tenant setup
+- advanced reporting and executive dashboards
+- talent pooling / CRM workflows
+- customer support / operational support flows
+- candidate feedback workflows
+- deep compliance and enterprise governance flows
+
+These are valuable, but they are not necessary to define the **minimum essential implementation reference** for the first useful version.
+
+#### Which use case should likely be implemented first
+**Use Case 1 — Open a structured requisition** should likely be implemented first.
+
+Reason:
+- it establishes the requisition entity,
+- the hiring team,
+- the evaluation criteria,
+- and the process structure that all downstream workflows depend on.
+
+A practical implementation sequence would be:
+**Use Case 1 -> Use Case 2 -> Use Case 3**
+
+
+
 ## Final recommendation summary
 LTI should move forward as a **collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies**.
 
