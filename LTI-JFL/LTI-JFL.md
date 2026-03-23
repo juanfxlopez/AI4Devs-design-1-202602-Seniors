@@ -1,10 +1,21 @@
-# LTI Design Package — Phase 2
+# LTI Design Package
 
 ## Context and assumptions
 
 This document defines **LTI** as a **collaboration-first, automation-heavy, AI-assisted full-cycle Applicant Tracking System (ATS)** for **employer-side mid-market knowledge-work companies**.
 
-It uses the uploaded LTI README as supporting product context for the full-cycle scope (job creation, publishing, application intake, review and screening, assessments, interview scheduling, hiring, onboarding handoff), but does **not** treat the current repository structure or implementation choices as the final product definition.[^repo]
+### Extracted baseline product scope
+From the uploaded project description, the baseline LTI scope covers the full hiring cycle, including:
+- job creation,
+- job publishing,
+- application intake,
+- review and screening,
+- assessments,
+- interview scheduling,
+- hiring,
+- and onboarding handoff.
+
+This extracted scope is used as supporting product context, but it does **not** define the final product strategy, prioritization, or business model.
 
 ### Working assumptions
 - Initial ICP: employer-side mid-market companies with roughly **100–1000 employees**
@@ -15,7 +26,7 @@ It uses the uploaded LTI README as supporting product context for the full-cycle
 
 ---
 
-## 1. Descripción breve del software LTI, valor añadido y ventajas competitivas
+## 1. Brief description of the LTI software, added value, and competitive advantages
 
 ### What LTI is
 LTI is a **full-cycle ATS** designed to help mid-market hiring teams run a faster, more consistent, and more collaborative hiring process from requisition to onboarding handoff. The product is optimized not just for recruiters, but for the **entire hiring team**: recruiters, hiring managers, interviewers, coordinators, and talent leaders.
@@ -81,7 +92,7 @@ If those are shallow, LTI risks becoming another mid-market ATS with familiar me
 
 ---
 
-## 2. Explicación de las funciones principales
+## 2. Explanation of the main functions
 
 The goal is **not** to build every ATS feature equally. The goal is to be excellent in the feature areas that directly support the strategic wedge.
 
@@ -291,7 +302,32 @@ For employer-side mid-market knowledge-work companies, LTI provides a full-cycle
 - Improve quality and usefulness of evaluation data
 - Reduce candidate application friction while preserving hiring signal
 
-## 4.6 Non-goals
+## 4.6 Measurable goals
+The following measurable goals are recommended for the first 12 months after initial production launch for the target ICP.
+
+### Adoption and engagement goals
+- At least **70% of active hiring managers** in live customer accounts complete at least one review, approval, or feedback action each month.
+- At least **80% of interview loops** in live customer accounts have complete structured feedback submitted before final debrief.
+- At least **60% of recruiter users** actively use one or more automation rules each month.
+- At least **50% of recruiter users** actively use at least one AI-assisted workflow each month.
+
+### Efficiency goals
+- Reduce average **time-to-first-review** for shortlisted candidates by **30%** versus the customer’s baseline process.
+- Reduce average **overdue manager review items** by **40%** versus baseline.
+- Reduce average **time-in-stage** for core screening and interview stages by **20%** versus baseline.
+- Reduce recruiter-reported administrative time per open role by at least **25%**.
+
+### Candidate experience goals
+- Improve completed application rate for CV-based applications by **15%** versus customer baseline where redundant data entry is reduced.
+- Keep candidate save-and-resume failure or abandonment caused by product-side issues below **1%** of started applications.
+
+### Business outcome goals
+- Achieve customer gross retention of at least **90%** in the first renewal cycle.
+- Achieve at least **25% attach rate** for advanced automation or AI features among live customers after initial rollout.
+
+These targets should be refined during discovery and pilot phases, but they provide a measurable operating definition of success.
+
+## 4.7 Non-goals
 LTI is **not** initially intended to be:
 - a full HRIS/HCM platform,
 - a staffing agency CRM,
@@ -299,7 +335,7 @@ LTI is **not** initially intended to be:
 - an enterprise-global governance-heavy suite,
 - or a fully autonomous AI screening and rejection system.
 
-## 4.7 Business model summary
+## 4.8 Business model summary
 ### Packaging hypothesis
 - **Core platform**: structured ATS workflow + collaboration + basic analytics
 - **Pro tier**: advanced automation + advanced analytics + AI assistance
@@ -315,7 +351,7 @@ Recommended starting model:
 ### Why this model fits
 Mid-market buyers want value tied to hiring complexity and team usage, but penalizing manager participation through per-seat pricing can weaken adoption.
 
-## 4.8 Core use cases
+## 4.9 Core use cases
 1. Recruiter and hiring manager define a role and agree on success criteria
 2. Recruiter opens a requisition and routes for approval
 3. Job is published and applications begin arriving
@@ -329,7 +365,33 @@ Mid-market buyers want value tied to hiring complexity and team usage, but penal
 11. Accepted candidate is handed off to onboarding / HR systems
 12. TA leader monitors funnel bottlenecks, manager responsiveness, and conversion rates
 
-## 4.9 Functional requirements
+## 4.10 Main user stories
+### Recruiter user stories
+- As a recruiter, I want to create a requisition with a structured hiring plan so that the role is aligned before candidates enter the pipeline.
+- As a recruiter, I want the system to remind managers and interviewers about pending actions so that I spend less time chasing people manually.
+- As a recruiter, I want AI-generated candidate summaries tied to job requirements so that I can triage applications faster without losing important evidence.
+- As a recruiter, I want a structured debrief workspace so that hiring decisions are easier to compare and document.
+- As a recruiter, I want to automate stage-based communication and approval routing so that routine tasks do not slow down the funnel.
+
+### Hiring manager user stories
+- As a hiring manager, I want a simple inbox of pending candidate reviews and approvals so that I know exactly what requires my attention.
+- As a hiring manager, I want to see concise candidate evidence rather than raw application overload so that I can make faster, more informed decisions.
+- As a hiring manager, I want interview scorecards and evaluation criteria tied to the role so that my team evaluates consistently.
+- As a hiring manager, I want to participate in a structured debrief with clear evidence so that final decisions are more confident and less subjective.
+
+### Interviewer user stories
+- As an interviewer, I want role-specific interview guidance and a simple feedback form so that I know what to assess and can submit useful feedback quickly.
+
+### Talent leader user stories
+- As a talent leader, I want real-time visibility into stuck roles, response delays, and stage conversion so that I can fix process problems before they impact hiring outcomes.
+- As a talent leader, I want to understand whether automation and AI features are improving speed and consistency so that I can justify continued investment.
+
+### Candidate user stories
+- As a candidate, I want the system to extract information from my CV and only ask me to confirm or complete missing fields so that I do not retype what is already present.
+- As a candidate, I want application requirements to feel relevant to the role so that the process feels fair and not unnecessarily repetitive.
+- As a candidate, I want timely, clear communication throughout the process so that I understand my status and next steps.
+
+## 4.11 Functional requirements
 
 ### FR-1 Requisition and hiring plan management
 The system shall allow recruiters and managers to create a requisition, define role requirements, assign an approval flow, and configure the hiring plan.
@@ -441,7 +503,7 @@ The system shall manage offer workflow and downstream handoff.
 - Handoff checklist
 - Basic HRIS / onboarding transfer package
 
-## 4.10 Non-functional requirements
+## 4.12 Non-functional requirements
 These are product-level requirements, not implementation design.
 
 ### Security and privacy
@@ -467,7 +529,49 @@ These are product-level requirements, not implementation design.
 ### Reporting integrity
 - Operational analytics should reflect current workflow state with trustworthy, reconcilable data
 
-## 4.11 MVP scope
+## 4.13 Acceptance criteria
+These acceptance criteria are written at the product-feature level so they can guide later story breakdown.
+
+### AC-1 Structured hiring workflow
+- A recruiter can create a requisition, assign a hiring manager, and configure a hiring plan without leaving the main workflow.
+- A hiring manager can review and approve a requisition with visible role requirements and interview plan context.
+- Scorecards and interview kits can be attached to a role before candidates are advanced to interview stages.
+
+### AC-2 Hiring-manager collaboration workspace
+- A hiring manager sees all pending candidate reviews, feedback tasks, and approvals in a single task-oriented view.
+- The workspace clearly shows overdue actions and required next steps.
+- Recruiters and managers can access a shared decision log tied to explicit evaluation criteria.
+
+### AC-3 Workflow automation
+- Admins or recruiters can configure reminders, escalations, and communication triggers without engineering support.
+- Automated reminders are sent when configured deadlines are missed.
+- Offer and handoff workflows can trigger downstream tasks after candidate acceptance.
+
+### AC-4 Candidate intake and signal extraction
+- A candidate can upload a CV and receive extracted fields for confirmation instead of re-entering all information manually.
+- Recruiters can view a structured candidate summary with evidence linked to job requirements.
+- The system can support role-specific application questions without forcing the same flow for every role.
+
+### AC-5 Interview coordination and feedback
+- Recruiters can assign interviewers and collect structured feedback for each stage.
+- Interviewers receive role-specific context before interviews.
+- Debrief preparation includes consolidated feedback and candidate evidence.
+
+### AC-6 Recruiting ops analytics
+- Recruiters and talent leaders can view current time-in-stage, overdue feedback, and manager responsiveness in-product.
+- Roles that exceed configurable delay thresholds are surfaced as stuck or at risk.
+- Application completion and abandonment data is visible for each role.
+
+### AC-7 AI assistance
+- AI summaries are clearly labeled and presented as assistive output, not final decisions.
+- Users can review and edit AI-generated drafts before sending or saving sensitive outputs.
+- AI-generated content is traceable to the relevant candidate inputs, role requirements, or workflow context.
+
+### AC-8 Offer and onboarding handoff
+- Recruiters can generate and route offers for approval in-product.
+- Accepted candidates can be moved into a defined onboarding handoff workflow without re-entering core information.
+
+## 4.14 MVP scope
 The MVP should focus on the parts of the product most central to the wedge.
 
 ### In MVP
@@ -490,7 +594,7 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Enterprise-grade multi-entity administration
 - Advanced AI features that require greater governance complexity
 
-## 4.12 Prioritization
+## 4.15 Prioritization
 
 ### P0 — must-have to support positioning
 - Structured hiring workflow
@@ -515,7 +619,7 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Broader CRM / talent pooling capabilities
 - Verticalized templates by industry
 
-## 4.13 Success metrics / KPIs
+## 4.16 Success metrics / KPIs
 
 ### Product usage metrics
 - Hiring-manager weekly active usage
@@ -539,7 +643,7 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Expansion into advanced analytics / AI tiers
 - Win rate versus incumbent ATS alternatives
 
-## 4.14 Assumptions, dependencies, and risks
+## 4.17 Assumptions, dependencies, and risks
 
 ### Assumptions
 - Mid-market buyers value manager adoption and workflow quality enough to switch ATS
@@ -567,7 +671,7 @@ The MVP should focus on the parts of the product most central to the wedge.
 5. **Data quality risk**  
    Recruiting analytics and AI usefulness depend on disciplined workflow capture.
 
-## 4.15 Open questions for the next iteration
+## 4.18 Open questions for the next iteration
 - Should LTI begin with one functional-industry focus inside knowledge-work (e.g., B2B SaaS / tech-enabled services)?
 - How much configurability should the initial workflow engine expose versus guided defaults?
 - Which candidate-facing feedback features should be enabled by default versus optional?
@@ -588,10 +692,9 @@ This direction is recommended because it best fits the existing LTI product scop
 ---
 
 ## References
-[^repo]: Uploaded LTI README used as supporting context for current product scope.
-[^aptitude]: Aptitude Research, *Beyond Tracking: The Evolution of the ATS in an Intelligent and Agentic Era* (2025). Key findings surfaced on the report page: https://www.aptituderesearch.com/research_report/beyond-tracking-the-evolution-of-the-ats-in-an-intelligent-and-agentic-era/
-[^greenhouse]: Greenhouse, *Interviewing & decision making* and structured hiring resources. https://www.greenhouse.com/interviewing-decision-making and https://support.greenhouse.io/hc/en-us/articles/360007245452-Structured-hiring-Introduction
-[^ashby]: Ashby, *Powerful Analytics and Reporting*. https://www.ashbyhq.com/platform/recruiting/analytics
-[^workable]: Workable Help Center, *Setting up automated actions*. https://help.workable.com/hc/en-us/articles/1500007691921-Setting-up-automated-actions
-[^linkedin]: LinkedIn, *LinkedIn Research: Talent 2026*. https://news.linkedin.com/en-us/2026/LinkedIn-Research-Talent-2026
-[^ai-act]: European Commission, *Navigating the AI Act*; recruitment/employment AI is part of the high-risk system framework. https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act
+[^aptitude]: Aptitude Research, *Beyond Tracking: The Evolution of the ATS in an Intelligent and Agentic Era* (2025). Key findings surfaced on the report page: [Aptitude Research report page](https://www.aptituderesearch.com/research_report/beyond-tracking-the-evolution-of-the-ats-in-an-intelligent-and-agentic-era/)
+[^greenhouse]: Greenhouse, *Interviewing & decision making* and structured hiring resources: [Interviewing & decision making](https://www.greenhouse.com/interviewing-decision-making) and [Structured hiring introduction](https://support.greenhouse.io/hc/en-us/articles/360007245452-Structured-hiring-Introduction)
+[^ashby]: Ashby, *Powerful Analytics and Reporting*: [Ashby recruiting analytics](https://www.ashbyhq.com/platform/recruiting/analytics)
+[^workable]: Workable Help Center, *Setting up automated actions*: [Workable automated actions](https://help.workable.com/hc/en-us/articles/1500007691921-Setting-up-automated-actions)
+[^linkedin]: LinkedIn, *LinkedIn Research: Talent 2026*: [LinkedIn Talent 2026](https://news.linkedin.com/en-us/2026/LinkedIn-Research-Talent-2026)
+[^ai-act]: European Commission, *Navigating the AI Act*; recruitment/employment AI is part of the high-risk system framework: [Navigating the AI Act](https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act)
