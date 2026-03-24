@@ -680,7 +680,6 @@ The MVP should focus on the parts of the product most central to the wedge.
 
 ---
 
-
 ## 5. Top 3 use cases and UML diagrams
 
 ### 5.1 Assumptions
@@ -916,7 +915,1000 @@ Reason:
 A practical implementation sequence would be:
 **Use Case 1 -> Use Case 2 -> Use Case 3**
 
+---
 
+
+## 6. Logical data model for the first useful version of LTI
+
+This section defines the **logical data model** for the **first useful version** of LTI based on the **3 main use cases in section 5**:
+
+1. **Open a structured requisition**
+2. **Submit application and create candidate profile**
+3. **Collaboratively evaluate candidate and record decision**
+
+This scope is intentionally narrower than the broader full-cycle product vision. The model below includes only the entities, attributes, and relationships required to support those 3 use cases and the minimum supporting workflow behavior needed to make them operational.
+
+### 6.1 Assumptions and modeling boundary
+
+#### Scope included
+The data model includes the business data required for:
+- requisition creation and approval,
+- hiring-plan setup,
+- scorecards and interview structure,
+- hiring-team assignment,
+- job posting,
+- candidate profile creation,
+- candidate documents,
+- role-specific application questions,
+- recruiter and hiring-manager review,
+- interview coordination,
+- structured interview feedback,
+- collaborative decision logging,
+- lightweight notifications,
+- and traceable AI-assisted summaries.
+
+#### Scope intentionally excluded
+To stay aligned with the **minimum essential implementation reference** in section 5, this model intentionally excludes:
+- offer creation and approval,
+- onboarding / HRIS handoff,
+- advanced dashboards and analytics marts,
+- admin / tenant setup workflows,
+- talent pooling / CRM,
+- customer support flows,
+- candidate feedback workflows,
+- and deep enterprise compliance / governance modules.
+
+#### Assumptions
+- A minimal `Organization` root is included because the company account and hiring team are assumed to exist even though admin setup is out of scope.
+- `JobPosting` is modeled separately from `Requisition` because the document distinguishes opening a requisition from publishing a job and receiving applications.
+- AI is modeled only as **assistive, reviewable output**, never as an autonomous decision-maker.
+- Notifications are modeled minimally as reminders and status updates, not as a full messaging/integration subsystem.
+- `department_name` and `location_text` are simple attributes on `Requisition` in this first version to keep the model lean.
+
+### 6.2 Entity inventory
+
+#### Core ATS entities
+
+| Entity | Purpose |
+|---|---|
+| Organization | Minimal tenant/account root for ownership of ATS data |
+| User | Internal actor: recruiter, hiring manager, interviewer, coordinator |
+| Requisition | Internal hiring request for a role |
+| RequisitionApproval | Approval steps needed before a requisition can be published |
+| HiringPlan | Structured role brief and hiring framework for a requisition |
+| PipelineStage | Ordered stages in the hiring process for a requisition |
+| EvaluationCriterion | Scorecard / rubric criteria used to assess candidates |
+| InterviewKit | Stage-specific interview guidance and prompts |
+| JobPosting | Candidate-facing published job linked to a requisition |
+| Candidate | Candidate master profile |
+| CandidateDocument | CV/resume and related candidate files |
+| Application | Candidate's application to a requisition/posting |
+| ApplicationQuestion | Role-specific application question |
+| CandidateReview | Recruiter or hiring-manager review action on an application |
+| Interview | Scheduled/planned interview event for an application |
+| InterviewFeedback | Structured feedback submitted after an interview |
+| HiringDecision | Final recorded decision for an application |
+
+#### Supporting entities
+
+| Entity | Purpose |
+|---|---|
+| Notification | Reminder or status update sent to candidates or internal users |
+| AIArtifact | AI-assisted summary, brief, or evidence view tied to workflow context |
+
+#### Associative / junction entities
+
+| Entity | Purpose |
+|---|---|
+| RequisitionTeamMember | Assigns users to a requisition-specific hiring role |
+| ApplicationResponse | Stores candidate answers to application questions |
+| ApplicationStageTransition | Tracks movement of an application through the pipeline |
+| InterviewParticipant | Assigns users to interviews |
+| FeedbackCriterionRating | Criterion-level score/evidence inside interview feedback |
+| DecisionParticipant | Captures stakeholder participation/input in the final decision |
+
+### 6.3 Detailed logical data model
+
+#### Modeling conventions
+- All IDs are `uuid`.
+- `enum` means a controlled vocabulary and not necessarily a separate lookup table.
+- `json` is used only where variable structured content is helpful in the MVP.
+- Standard audit fields such as `created_at` and `updated_at` are assumed on mutable entities even when not repeated in every table.
+
+---
+
+#### Entity: Organization
+- **Purpose:** Minimal owning account for the first useful version
+- **Primary key:** `organization_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| organization_id | uuid | Unique organization identifier | PK |
+| name | string | Company/account name | Unique within platform |
+| status | enum | Account status | active, inactive |
+| default_timezone | string | Default time zone | Nullable |
+| default_locale | string | Default locale | Nullable |
+
+**Important relationships:** One organization owns many users, requisitions, candidates, notifications, and AI artifacts.
+
+---
+
+#### Entity: User
+- **Purpose:** Internal actor participating in hiring workflows
+- **Primary key:** `user_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| user_id | uuid | Unique user identifier | PK |
+| organization_id | uuid | Owning organization | FK -> Organization |
+| email | string | User email | Unique within organization |
+| first_name | string | First name |  |
+| last_name | string | Last name |  |
+| display_name | string | Full display name |  |
+| user_type | enum | Main persona | recruiter, hiring_manager, interviewer, coordinator, admin |
+| status | enum | User state | invited, active, inactive |
+
+**Important relationships:** Users create requisitions, approve requisitions, belong to hiring teams, perform reviews, participate in interviews, submit feedback, and contribute to decisions.
+
+---
+
+#### Entity: Requisition
+- **Purpose:** Internal hiring request that anchors the hiring workflow
+- **Primary key:** `requisition_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| requisition_id | uuid | Unique requisition identifier | PK |
+| organization_id | uuid | Owning organization | FK -> Organization |
+| recruiter_owner_user_id | uuid | Recruiter owner | FK -> User |
+| hiring_manager_user_id | uuid | Hiring manager | FK -> User |
+| requisition_code | string | Human-facing requisition code | Unique |
+| title | string | Role title |  |
+| department_name | string | Department or team name | Lean MVP attribute |
+| location_text | string | Job location | Nullable |
+| employment_type | enum | Employment category | full_time, part_time, contract, internship |
+| workplace_type | enum | Work arrangement | remote, hybrid, onsite |
+| headcount | integer | Number of openings | Default 1 |
+| business_need_text | text | Reason the role exists |  |
+| status | enum | Requisition lifecycle | draft, pending_approval, approved, published, closed, cancelled |
+| published_at | datetime | When job became published | Nullable |
+| closed_at | datetime | When requisition closed | Nullable |
+
+**Important relationships:** A requisition has approvals, one hiring plan, pipeline stages, evaluation criteria, team members, job postings, and applications.
+
+---
+
+#### Entity: RequisitionApproval
+- **Purpose:** Approval step in the requisition approval path
+- **Primary key:** `requisition_approval_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| requisition_approval_id | uuid | Unique approval step ID | PK |
+| requisition_id | uuid | Related requisition | FK -> Requisition |
+| approver_user_id | uuid | Assigned approver | FK -> User |
+| step_order | integer | Sequence in approval path |  |
+| status | enum | Approval status | pending, approved, rejected, skipped |
+| due_at | datetime | Due timestamp | Nullable |
+| decided_at | datetime | Approval decision time | Nullable |
+| comments | text | Approval note | Nullable |
+
+**Important relationships:** Many approval steps belong to one requisition; each step is assigned to one user.
+
+---
+
+#### Entity: HiringPlan
+- **Purpose:** Structured hiring brief and framework for a requisition
+- **Primary key:** `hiring_plan_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| hiring_plan_id | uuid | Unique hiring plan ID | PK |
+| requisition_id | uuid | Related requisition | FK -> Requisition, logically 1:1 |
+| role_summary | text | Summary of the role |  |
+| business_outcomes_text | text | What success looks like |  |
+| must_have_requirements_json | json | Required qualifications/requirements | Structured list |
+| nice_to_have_requirements_json | json | Preferred qualifications | Structured list |
+| interview_structure_text | text | Human-readable interview structure | Nullable |
+| status | enum | Plan state | draft, active, archived |
+| version_number | integer | Version number | Supports revision |
+
+**Important relationships:** One requisition has one active hiring plan; the hiring plan owns the pipeline stages and evaluation criteria.
+
+---
+
+#### Entity: PipelineStage
+- **Purpose:** Ordered stage in the requisition's hiring pipeline
+- **Primary key:** `stage_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| stage_id | uuid | Unique stage identifier | PK |
+| hiring_plan_id | uuid | Parent hiring plan | FK -> HiringPlan |
+| stage_name | string | Stage label |  |
+| stage_type | enum | Type of stage | intake, recruiter_review, manager_review, interview, debrief, decision, rejected, hired |
+| sequence_number | integer | Stage order |  |
+| is_terminal | boolean | Whether stage ends workflow |  |
+| is_active | boolean | Active stage flag |  |
+
+**Important relationships:** A hiring plan contains many pipeline stages; an application moves through them via `ApplicationStageTransition`.
+
+---
+
+#### Entity: EvaluationCriterion
+- **Purpose:** Scorecard criterion used in candidate evaluation
+- **Primary key:** `criterion_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| criterion_id | uuid | Unique criterion ID | PK |
+| hiring_plan_id | uuid | Parent hiring plan | FK -> HiringPlan |
+| stage_id | uuid | Optional stage scope | Nullable FK -> PipelineStage |
+| name | string | Criterion name |  |
+| description | text | Criterion guidance | Nullable |
+| criterion_type | enum | Criterion category | competency, experience, behavior, domain_knowledge, knockout |
+| rating_scale_json | json | Allowed rating options | Nullable |
+| is_required | boolean | Whether completion is required |  |
+| display_order | integer | Ordering in rubric |  |
+
+**Important relationships:** Criteria belong to the hiring plan and may be stage-specific; interview feedback can rate them through `FeedbackCriterionRating`.
+
+---
+
+#### Entity: InterviewKit
+- **Purpose:** Interviewer guidance and prompts associated with a stage
+- **Primary key:** `interview_kit_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| interview_kit_id | uuid | Unique interview kit ID | PK |
+| stage_id | uuid | Related stage | FK -> PipelineStage |
+| title | string | Kit title |  |
+| guidance_text | text | Interview instructions |  |
+| prompts_json | json | Suggested questions/prompts | Nullable |
+| note_template_text | text | Optional note template | Nullable |
+| status | enum | Kit state | draft, active, archived |
+
+**Important relationships:** A stage can have zero or more interview kits; interviews may reference one applicable kit.
+
+---
+
+#### Entity: RequisitionTeamMember
+- **Purpose:** Assignment of a user to a requisition-specific role
+- **Primary key:** `requisition_team_member_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| requisition_team_member_id | uuid | Unique team assignment ID | PK |
+| requisition_id | uuid | Related requisition | FK -> Requisition |
+| user_id | uuid | Assigned user | FK -> User |
+| team_role | enum | Role on hiring team | recruiter_owner, recruiter_collaborator, hiring_manager, interviewer, approver, coordinator |
+| responsibility_text | text | Optional scope note | Nullable |
+| is_active | boolean | Active flag |  |
+
+**Important relationships:** Resolves many-to-many between requisitions and users.
+
+---
+
+#### Entity: JobPosting
+- **Purpose:** Candidate-facing published job entry point
+- **Primary key:** `job_posting_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| job_posting_id | uuid | Unique job posting ID | PK |
+| requisition_id | uuid | Source requisition | FK -> Requisition |
+| title | string | Public title |  |
+| public_description | text | Candidate-facing description |  |
+| visibility | enum | Posting visibility | external, internal, both |
+| posting_status | enum | Posting state | draft, live, paused, closed |
+| application_open_at | datetime | When applications open | Nullable |
+| application_close_at | datetime | When applications close | Nullable |
+| public_url | string | Candidate application URL | Nullable |
+
+**Important relationships:** A requisition may have one or more postings; postings own role-specific application questions.
+
+---
+
+#### Entity: Candidate
+- **Purpose:** Master candidate record created from application intake
+- **Primary key:** `candidate_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| candidate_id | uuid | Unique candidate identifier | PK |
+| organization_id | uuid | Owning organization | FK -> Organization |
+| first_name | string | First name |  |
+| last_name | string | Last name |  |
+| primary_email | string | Main email | Nullable |
+| phone | string | Phone number | Nullable |
+| location_text | string | Current location | Nullable |
+| linkedin_url | string | Profile URL | Nullable |
+| portfolio_url | string | Portfolio URL | Nullable |
+| consent_status | enum | Data consent state | provided, withdrawn, not_required |
+| profile_status | enum | Candidate status | active, duplicate, withdrawn, archived |
+| merged_into_candidate_id | uuid | Surviving candidate after merge | Nullable self-FK |
+
+**Important relationships:** A candidate can own many documents and many applications.
+
+---
+
+#### Entity: CandidateDocument
+- **Purpose:** Resume/CV and related candidate files
+- **Primary key:** `candidate_document_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| candidate_document_id | uuid | Unique document ID | PK |
+| candidate_id | uuid | Owning candidate | FK -> Candidate |
+| document_type | enum | Kind of document | resume, cover_letter, attachment, portfolio |
+| file_name | string | Original file name |  |
+| file_ref | string | Storage reference |  |
+| mime_type | string | MIME type |  |
+| parsed_text | text | Extracted raw text | Nullable |
+| extraction_json | json | Structured extracted fields | Nullable |
+| is_primary | boolean | Primary document flag |  |
+| uploaded_at | datetime | Upload timestamp |  |
+
+**Important relationships:** Documents belong to a candidate and are a source for AI-assisted summaries and evidence views.
+
+---
+
+#### Entity: Application
+- **Purpose:** Candidate's submission to a role
+- **Primary key:** `application_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| application_id | uuid | Unique application identifier | PK |
+| candidate_id | uuid | Applicant | FK -> Candidate |
+| requisition_id | uuid | Target requisition | FK -> Requisition |
+| job_posting_id | uuid | Source posting | Nullable FK -> JobPosting |
+| current_stage_id | uuid | Current pipeline stage | Nullable FK -> PipelineStage |
+| source_type | enum | Source attribution | careers_site, referral, recruiter_sourced, import, internal |
+| status | enum | Application status | draft, submitted, in_review, interviewing, decision_pending, rejected, withdrawn, hired |
+| submitted_at | datetime | Submission timestamp | Nullable |
+| last_activity_at | datetime | Most recent workflow activity | Nullable |
+| save_resume_token | string | Save/resume token | Nullable |
+| withdrawn_at | datetime | Withdrawal timestamp | Nullable |
+| rejected_at | datetime | Rejection timestamp | Nullable |
+
+**Important relationships:** This is the central operational entity linking candidate, requisition, job posting, stage transitions, reviews, interviews, feedback, decision, notifications, and AI artifacts.
+
+---
+
+#### Entity: ApplicationQuestion
+- **Purpose:** Role-specific question shown during application
+- **Primary key:** `application_question_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| application_question_id | uuid | Unique question ID | PK |
+| job_posting_id | uuid | Related posting | FK -> JobPosting |
+| question_text | text | Prompt text |  |
+| question_type | enum | Input type | short_text, long_text, single_select, multi_select, boolean, number, date, file |
+| is_required | boolean | Required flag |  |
+| display_order | integer | Ordering |  |
+| options_json | json | Options/configuration | Nullable |
+
+**Important relationships:** A job posting can have many role-specific questions; applications answer them via `ApplicationResponse`.
+
+---
+
+#### Entity: ApplicationResponse
+- **Purpose:** Candidate's answer to one application question
+- **Primary key:** `application_response_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| application_response_id | uuid | Unique response ID | PK |
+| application_id | uuid | Related application | FK -> Application |
+| application_question_id | uuid | Related question | FK -> ApplicationQuestion |
+| response_text | text | Text response | Nullable |
+| response_json | json | Structured answer | Nullable |
+| created_at | datetime | Capture time |  |
+
+**Important relationships:** Resolves many-to-many between applications and application questions.
+
+---
+
+#### Entity: CandidateReview
+- **Purpose:** Recruiter or hiring-manager review action on an application
+- **Primary key:** `candidate_review_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| candidate_review_id | uuid | Unique review ID | PK |
+| application_id | uuid | Related application | FK -> Application |
+| reviewer_user_id | uuid | Reviewer | FK -> User |
+| review_type | enum | Review category | recruiter_review, manager_review |
+| status | enum | Review state | pending, completed, skipped |
+| recommendation | enum | Review recommendation | advance, hold, reject, request_interview, request_more_info |
+| summary_text | text | Review note/summary | Nullable |
+| ai_artifact_id | uuid | Referenced AI summary | Nullable FK -> AIArtifact |
+| due_at | datetime | Due timestamp | Nullable |
+| completed_at | datetime | Completion timestamp | Nullable |
+
+**Important relationships:** Supports recruiter triage and manager review queue; may reference an AI summary.
+
+---
+
+#### Entity: ApplicationStageTransition
+- **Purpose:** History of application movement through the pipeline
+- **Primary key:** `stage_transition_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| stage_transition_id | uuid | Unique transition ID | PK |
+| application_id | uuid | Related application | FK -> Application |
+| from_stage_id | uuid | Previous stage | Nullable FK -> PipelineStage |
+| to_stage_id | uuid | New stage | FK -> PipelineStage |
+| changed_by_user_id | uuid | User who moved the stage | Nullable FK -> User |
+| transition_reason | text | Rationale | Nullable |
+| entered_at | datetime | Entry timestamp |  |
+| exited_at | datetime | Exit timestamp | Nullable |
+| is_current | boolean | Current-stage marker |  |
+
+**Important relationships:** Records pipeline progression and supports the pipeline-status update outcome in use case 3.
+
+---
+
+#### Entity: Interview
+- **Purpose:** Interview event for evaluating an application
+- **Primary key:** `interview_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| interview_id | uuid | Unique interview ID | PK |
+| application_id | uuid | Related application | FK -> Application |
+| stage_id | uuid | Related interview stage | FK -> PipelineStage |
+| interview_kit_id | uuid | Guidance kit used | Nullable FK -> InterviewKit |
+| interview_type | enum | Interview format | phone, video, onsite, panel, case, work_sample |
+| schedule_status | enum | Scheduling state | planned, scheduling, scheduled, completed, cancelled |
+| scheduled_start_at | datetime | Start time | Nullable |
+| scheduled_end_at | datetime | End time | Nullable |
+| location_text | string | Meeting room or link | Nullable |
+| coordinator_user_id | uuid | Internal owner/coordinator | Nullable FK -> User |
+
+**Important relationships:** An application can have multiple interviews; interviews collect participants and structured feedback.
+
+---
+
+#### Entity: InterviewParticipant
+- **Purpose:** User assigned to an interview
+- **Primary key:** `interview_participant_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| interview_participant_id | uuid | Unique participant ID | PK |
+| interview_id | uuid | Related interview | FK -> Interview |
+| user_id | uuid | Assigned user | FK -> User |
+| participant_role | enum | Interview role | interviewer, observer, coordinator, note_taker |
+| attendance_status | enum | Attendance / invitation state | invited, accepted, declined, completed, no_show |
+| assigned_at | datetime | Assignment time |  |
+
+**Important relationships:** Resolves many-to-many between interviews and users.
+
+---
+
+#### Entity: InterviewFeedback
+- **Purpose:** Structured feedback submitted after an interview
+- **Primary key:** `interview_feedback_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| interview_feedback_id | uuid | Unique feedback ID | PK |
+| interview_id | uuid | Related interview | FK -> Interview |
+| submitted_by_user_id | uuid | Feedback author | FK -> User |
+| feedback_status | enum | Feedback state | pending, submitted, waived, late |
+| overall_recommendation | enum | Overall interview signal | strong_yes, yes, mixed, no, strong_no |
+| strengths_text | text | Strengths summary | Nullable |
+| concerns_text | text | Concerns summary | Nullable |
+| overall_notes_text | text | Freeform notes | Nullable |
+| due_at | datetime | Due timestamp | Nullable |
+| submitted_at | datetime | Submission timestamp | Nullable |
+
+**Important relationships:** Each interview can collect multiple feedback submissions; feedback is decomposed into criterion-level ratings.
+
+---
+
+#### Entity: FeedbackCriterionRating
+- **Purpose:** Criterion-level rating and evidence inside one feedback form
+- **Primary key:** `feedback_rating_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| feedback_rating_id | uuid | Unique feedback criterion row ID | PK |
+| interview_feedback_id | uuid | Parent feedback | FK -> InterviewFeedback |
+| criterion_id | uuid | Rated criterion | FK -> EvaluationCriterion |
+| rating_value | decimal | Numeric or normalized score | Nullable |
+| rating_label | string | Text score label | Nullable |
+| evidence_text | text | Supporting evidence | Nullable |
+
+**Important relationships:** Resolves many-to-many between interview feedback and evaluation criteria.
+
+---
+
+#### Entity: HiringDecision
+- **Purpose:** Final documented decision on an application
+- **Primary key:** `hiring_decision_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| hiring_decision_id | uuid | Unique decision ID | PK |
+| application_id | uuid | Related application | FK -> Application |
+| decision_stage_id | uuid | Stage where decision happened | Nullable FK -> PipelineStage |
+| decision_type | enum | Final decision | advance, reject, hold, hire, no_hire |
+| outcome_status | enum | Record state | proposed, confirmed, reversed |
+| rationale_text | text | Decision rationale |  |
+| decided_at | datetime | Decision timestamp |  |
+| decided_by_user_id | uuid | Recorder/owner of decision | FK -> User |
+| ai_artifact_id | uuid | Optional AI debrief summary | Nullable FK -> AIArtifact |
+
+**Important relationships:** A final decision belongs to one application and can collect stakeholder contributions through `DecisionParticipant`.
+
+---
+
+#### Entity: DecisionParticipant
+- **Purpose:** Stakeholder contribution recorded during final debrief/decision
+- **Primary key:** `decision_participant_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| decision_participant_id | uuid | Unique participant row ID | PK |
+| hiring_decision_id | uuid | Parent decision | FK -> HiringDecision |
+| user_id | uuid | Participating stakeholder | FK -> User |
+| participant_role | enum | Decision role | recruiter, hiring_manager, interviewer |
+| recommendation | enum | Individual recommendation | hire, no_hire, hold, abstain |
+| rationale_text | text | Participant rationale | Nullable |
+| recorded_at | datetime | Recorded time |  |
+
+**Important relationships:** Resolves many-to-many between decisions and participating users.
+
+---
+
+#### Entity: Notification
+- **Purpose:** Sent reminder or status update tied to workflow activity
+- **Primary key:** `notification_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| notification_id | uuid | Unique notification ID | PK |
+| organization_id | uuid | Owning organization | FK -> Organization |
+| recipient_type | enum | Recipient class | user, candidate |
+| recipient_user_id | uuid | Internal recipient | Nullable FK -> User |
+| recipient_candidate_id | uuid | Candidate recipient | Nullable FK -> Candidate |
+| related_entity_type | enum | Context entity type | requisition, application, interview, review, decision |
+| related_entity_id | uuid | Context entity ID | Polymorphic reference |
+| notification_type | enum | Purpose | reminder, status_update, review_request, interview_update |
+| channel | enum | Delivery channel | email, in_app, sms |
+| status | enum | Delivery state | queued, sent, delivered, failed, read |
+| sent_at | datetime | Sent timestamp | Nullable |
+
+**Important relationships:** Keeps a lightweight record of reminders and status updates.
+
+---
+
+#### Entity: AIArtifact
+- **Purpose:** Traceable AI-assisted output used in review and interview preparation
+- **Primary key:** `ai_artifact_id (uuid)`
+
+| Attribute | Type | Description | Notes |
+|---|---|---|---|
+| ai_artifact_id | uuid | Unique AI artifact ID | PK |
+| organization_id | uuid | Owning organization | FK -> Organization |
+| related_entity_type | enum | Context object | candidate, application, review, interview, decision |
+| related_entity_id | uuid | Context entity ID | Polymorphic reference |
+| artifact_type | enum | Output type | candidate_summary, evidence_map, interview_brief, debrief_summary |
+| input_reference_json | json | Traceability to source inputs |  |
+| output_text | text | AI-generated output |  |
+| review_status | enum | Human review state | draft, reviewed, edited, accepted, rejected |
+| reviewed_by_user_id | uuid | Reviewer | Nullable FK -> User |
+| created_at | datetime | Creation timestamp |  |
+
+**Important relationships:** Candidate reviews and hiring decisions may reference an AI artifact, but the AI artifact is never the decision-maker.
+
+### 6.4 Relationships summary
+
+| Source entity | Relationship | Target entity | Cardinality | Optionality | Business meaning |
+|---|---|---|---|---|---|
+| Organization | owns | User | 1:M | User mandatory | All internal users belong to one account |
+| Organization | owns | Requisition | 1:M | Requisition mandatory | Requisitions are tenant-scoped |
+| Organization | owns | Candidate | 1:M | Candidate mandatory | Candidate records are tenant-scoped |
+| Organization | owns | Notification | 1:M | Notification mandatory | Reminder/status records are tenant-scoped |
+| Organization | owns | AIArtifact | 1:M | AI artifact mandatory | AI outputs are tenant-scoped and auditable |
+| Requisition | owned by | User | M:1 | Mandatory recruiter owner | Recruiter owns the role workflow |
+| Requisition | managed by | User | M:1 | Mandatory hiring manager | Hiring manager is role stakeholder |
+| Requisition | has | RequisitionApproval | 1:M | Optional until routed | Requisition approval path |
+| Requisition | has | HiringPlan | 1:1 | Mandatory after structured setup | Structured role brief and framework |
+| HiringPlan | has | PipelineStage | 1:M | Mandatory | Ordered hiring stages |
+| HiringPlan | has | EvaluationCriterion | 1:M | Mandatory | Scorecard criteria |
+| PipelineStage | may have | InterviewKit | 1:M | Optional | Interview guidance for stage |
+| Requisition | has | RequisitionTeamMember | 1:M | Optional | Assigns hiring team members |
+| RequisitionTeamMember | links | User | M:1 | Mandatory | One row assigns one user |
+| Requisition | has | JobPosting | 1:M | Optional | Approved role can be published |
+| JobPosting | has | ApplicationQuestion | 1:M | Optional | Role-specific intake questions |
+| Candidate | has | CandidateDocument | 1:M | Optional | CV and attachments |
+| Candidate | submits | Application | 1:M | Optional | One candidate may apply to multiple roles |
+| Requisition | receives | Application | 1:M | Optional | Applications belong to roles |
+| JobPosting | originates | Application | 1:M | Optional | Tracks candidate entry point |
+| Application | answers | ApplicationResponse | 1:M | Optional | Candidate responses to intake questions |
+| ApplicationQuestion | answered by | ApplicationResponse | 1:M | Optional | Question can be answered by many applicants |
+| Application | has current stage | PipelineStage | M:1 | Optional | Current workflow position |
+| Application | has | CandidateReview | 1:M | Optional | Recruiter/manager reviews |
+| CandidateReview | performed by | User | M:1 | Mandatory | One reviewer per review row |
+| Application | has | ApplicationStageTransition | 1:M | Optional | Stage progression history |
+| ApplicationStageTransition | to_stage | PipelineStage | M:1 | Mandatory | Target stage of each movement |
+| Application | has | Interview | 1:M | Optional | Candidate interview events |
+| Interview | belongs to | PipelineStage | M:1 | Mandatory | Interview occurs within a stage |
+| Interview | may use | InterviewKit | M:1 | Optional | Structured interviewer context |
+| Interview | has | InterviewParticipant | 1:M | Optional | Assigns interview participants |
+| InterviewParticipant | links | User | M:1 | Mandatory | One user per assignment row |
+| Interview | has | InterviewFeedback | 1:M | Optional until submitted | Structured feedback collection |
+| InterviewFeedback | submitted by | User | M:1 | Mandatory | One author per feedback |
+| InterviewFeedback | has | FeedbackCriterionRating | 1:M | Optional | Criterion-level scoring |
+| FeedbackCriterionRating | evaluates | EvaluationCriterion | M:1 | Mandatory | Links feedback to scorecard criteria |
+| Application | has | HiringDecision | 1:M | Optional | Final or intermediate documented decision |
+| HiringDecision | recorded by | User | M:1 | Mandatory | Decision owner/recorder |
+| HiringDecision | has | DecisionParticipant | 1:M | Optional | Stakeholder participation in debrief |
+| DecisionParticipant | links | User | M:1 | Mandatory | One stakeholder per row |
+| CandidateReview | may reference | AIArtifact | M:1 | Optional | AI-assisted candidate summary |
+| HiringDecision | may reference | AIArtifact | M:1 | Optional | AI-assisted debrief summary |
+| Notification | may target | User | M:1 | Optional | Internal reminders/status updates |
+| Notification | may target | Candidate | M:1 | Optional | Candidate-facing updates |
+
+### 6.5 Mermaid ER diagram
+
+```mermaid
+erDiagram
+
+    ORGANIZATION {
+        uuid organization_id PK
+        string name
+        enum status
+        string default_timezone
+    }
+
+    USER {
+        uuid user_id PK
+        uuid organization_id FK
+        string email
+        string first_name
+        string last_name
+        enum user_type
+        enum status
+    }
+
+    REQUISITION {
+        uuid requisition_id PK
+        uuid organization_id FK
+        uuid recruiter_owner_user_id FK
+        uuid hiring_manager_user_id FK
+        string requisition_code
+        string title
+        string department_name
+        string location_text
+        enum employment_type
+        enum workplace_type
+        integer headcount
+        enum status
+    }
+
+    REQUISITION_APPROVAL {
+        uuid requisition_approval_id PK
+        uuid requisition_id FK
+        uuid approver_user_id FK
+        integer step_order
+        enum status
+        datetime due_at
+        datetime decided_at
+    }
+
+    HIRING_PLAN {
+        uuid hiring_plan_id PK
+        uuid requisition_id FK
+        integer version_number
+        enum status
+    }
+
+    PIPELINE_STAGE {
+        uuid stage_id PK
+        uuid hiring_plan_id FK
+        string stage_name
+        enum stage_type
+        integer sequence_number
+        boolean is_terminal
+        boolean is_active
+    }
+
+    EVALUATION_CRITERION {
+        uuid criterion_id PK
+        uuid hiring_plan_id FK
+        uuid stage_id FK
+        string name
+        enum criterion_type
+        boolean is_required
+        integer display_order
+    }
+
+    INTERVIEW_KIT {
+        uuid interview_kit_id PK
+        uuid stage_id FK
+        string title
+        enum status
+    }
+
+    REQUISITION_TEAM_MEMBER {
+        uuid requisition_team_member_id PK
+        uuid requisition_id FK
+        uuid user_id FK
+        enum team_role
+        boolean is_active
+    }
+
+    JOB_POSTING {
+        uuid job_posting_id PK
+        uuid requisition_id FK
+        string title
+        enum visibility
+        enum posting_status
+        datetime application_open_at
+        datetime application_close_at
+    }
+
+    CANDIDATE {
+        uuid candidate_id PK
+        uuid organization_id FK
+        string first_name
+        string last_name
+        string primary_email
+        string phone
+        enum consent_status
+        enum profile_status
+        uuid merged_into_candidate_id FK
+    }
+
+    CANDIDATE_DOCUMENT {
+        uuid candidate_document_id PK
+        uuid candidate_id FK
+        enum document_type
+        string file_name
+        string file_ref
+        boolean is_primary
+        datetime uploaded_at
+    }
+
+    APPLICATION {
+        uuid application_id PK
+        uuid candidate_id FK
+        uuid requisition_id FK
+        uuid job_posting_id FK
+        uuid current_stage_id FK
+        enum source_type
+        enum status
+        datetime submitted_at
+        datetime last_activity_at
+    }
+
+    APPLICATION_QUESTION {
+        uuid application_question_id PK
+        uuid job_posting_id FK
+        enum question_type
+        boolean is_required
+        integer display_order
+    }
+
+    APPLICATION_RESPONSE {
+        uuid application_response_id PK
+        uuid application_id FK
+        uuid application_question_id FK
+        text response_text
+    }
+
+    CANDIDATE_REVIEW {
+        uuid candidate_review_id PK
+        uuid application_id FK
+        uuid reviewer_user_id FK
+        uuid ai_artifact_id FK
+        enum review_type
+        enum status
+        enum recommendation
+        datetime due_at
+        datetime completed_at
+    }
+
+    APPLICATION_STAGE_TRANSITION {
+        uuid stage_transition_id PK
+        uuid application_id FK
+        uuid from_stage_id FK
+        uuid to_stage_id FK
+        uuid changed_by_user_id FK
+        datetime entered_at
+        datetime exited_at
+        boolean is_current
+    }
+
+    INTERVIEW {
+        uuid interview_id PK
+        uuid application_id FK
+        uuid stage_id FK
+        uuid interview_kit_id FK
+        uuid coordinator_user_id FK
+        enum interview_type
+        enum schedule_status
+        datetime scheduled_start_at
+        datetime scheduled_end_at
+    }
+
+    INTERVIEW_PARTICIPANT {
+        uuid interview_participant_id PK
+        uuid interview_id FK
+        uuid user_id FK
+        enum participant_role
+        enum attendance_status
+    }
+
+    INTERVIEW_FEEDBACK {
+        uuid interview_feedback_id PK
+        uuid interview_id FK
+        uuid submitted_by_user_id FK
+        enum feedback_status
+        enum overall_recommendation
+        datetime due_at
+        datetime submitted_at
+    }
+
+    FEEDBACK_CRITERION_RATING {
+        uuid feedback_rating_id PK
+        uuid interview_feedback_id FK
+        uuid criterion_id FK
+        decimal rating_value
+        string rating_label
+    }
+
+    HIRING_DECISION {
+        uuid hiring_decision_id PK
+        uuid application_id FK
+        uuid decision_stage_id FK
+        uuid decided_by_user_id FK
+        uuid ai_artifact_id FK
+        enum decision_type
+        enum outcome_status
+        datetime decided_at
+    }
+
+    DECISION_PARTICIPANT {
+        uuid decision_participant_id PK
+        uuid hiring_decision_id FK
+        uuid user_id FK
+        enum participant_role
+        enum recommendation
+    }
+
+    NOTIFICATION {
+        uuid notification_id PK
+        uuid organization_id FK
+        uuid recipient_user_id FK
+        uuid recipient_candidate_id FK
+        enum recipient_type
+        enum related_entity_type
+        uuid related_entity_id
+        enum notification_type
+        enum channel
+        enum status
+        datetime sent_at
+    }
+
+    AI_ARTIFACT {
+        uuid ai_artifact_id PK
+        uuid organization_id FK
+        enum related_entity_type
+        uuid related_entity_id
+        enum artifact_type
+        enum review_status
+        uuid reviewed_by_user_id FK
+        datetime created_at
+    }
+
+    ORGANIZATION ||--o{ USER : has
+    ORGANIZATION ||--o{ REQUISITION : owns
+    ORGANIZATION ||--o{ CANDIDATE : owns
+    ORGANIZATION ||--o{ NOTIFICATION : owns
+    ORGANIZATION ||--o{ AI_ARTIFACT : owns
+
+    USER ||--o{ REQUISITION : recruiter_owns
+    USER ||--o{ REQUISITION : hiring_manages
+
+    REQUISITION ||--o{ REQUISITION_APPROVAL : routes
+    USER ||--o{ REQUISITION_APPROVAL : approves
+
+    REQUISITION ||--|| HIRING_PLAN : has
+    HIRING_PLAN ||--o{ PIPELINE_STAGE : defines
+    HIRING_PLAN ||--o{ EVALUATION_CRITERION : defines
+    PIPELINE_STAGE ||--o{ EVALUATION_CRITERION : scopes
+    PIPELINE_STAGE ||--o{ INTERVIEW_KIT : supports
+
+    REQUISITION ||--o{ REQUISITION_TEAM_MEMBER : assigns
+    USER ||--o{ REQUISITION_TEAM_MEMBER : participates
+
+    REQUISITION ||--o{ JOB_POSTING : publishes
+    JOB_POSTING ||--o{ APPLICATION_QUESTION : asks
+
+    CANDIDATE ||--o{ CANDIDATE_DOCUMENT : has
+    CANDIDATE ||--o{ APPLICATION : submits
+    REQUISITION ||--o{ APPLICATION : receives
+    JOB_POSTING ||--o{ APPLICATION : originates
+    PIPELINE_STAGE ||--o{ APPLICATION : current_for
+
+    APPLICATION ||--o{ APPLICATION_RESPONSE : contains
+    APPLICATION_QUESTION ||--o{ APPLICATION_RESPONSE : answered_by
+
+    APPLICATION ||--o{ CANDIDATE_REVIEW : reviewed_in
+    USER ||--o{ CANDIDATE_REVIEW : performs
+    AI_ARTIFACT ||--o{ CANDIDATE_REVIEW : supports
+
+    APPLICATION ||--o{ APPLICATION_STAGE_TRANSITION : moves_through
+    PIPELINE_STAGE ||--o{ APPLICATION_STAGE_TRANSITION : to_stage
+    USER ||--o{ APPLICATION_STAGE_TRANSITION : changes
+
+    APPLICATION ||--o{ INTERVIEW : has
+    PIPELINE_STAGE ||--o{ INTERVIEW : occurs_in
+    INTERVIEW_KIT ||--o{ INTERVIEW : guides
+    USER ||--o{ INTERVIEW : coordinates
+
+    INTERVIEW ||--o{ INTERVIEW_PARTICIPANT : includes
+    USER ||--o{ INTERVIEW_PARTICIPANT : attends
+
+    INTERVIEW ||--o{ INTERVIEW_FEEDBACK : collects
+    USER ||--o{ INTERVIEW_FEEDBACK : submits
+    INTERVIEW_FEEDBACK ||--o{ FEEDBACK_CRITERION_RATING : scores
+    EVALUATION_CRITERION ||--o{ FEEDBACK_CRITERION_RATING : rates
+
+    APPLICATION ||--o{ HIRING_DECISION : results_in
+    USER ||--o{ HIRING_DECISION : records
+    PIPELINE_STAGE ||--o{ HIRING_DECISION : made_in
+    AI_ARTIFACT ||--o{ HIRING_DECISION : informs
+    HIRING_DECISION ||--o{ DECISION_PARTICIPANT : includes
+    USER ||--o{ DECISION_PARTICIPANT : contributes
+
+    USER ||--o{ NOTIFICATION : receives
+    CANDIDATE ||--o{ NOTIFICATION : receives
+    USER ||--o{ AI_ARTIFACT : reviews
+```
+
+### 6.6 Modeling notes and validation
+
+This model is sufficient for the **strict section 5 first useful version** because it supports the end-to-end loop that must be validated first:
+1. define a role collaboratively,
+2. receive structured candidate input,
+3. evaluate candidates collaboratively and reach a documented decision.
+
+The most central entities in this MVP model are:
+- `Requisition`
+- `HiringPlan`
+- `Application`
+- `PipelineStage`
+- `CandidateReview`
+- `Interview`
+- `InterviewFeedback`
+- `HiringDecision`
+
+#### Likely future extensions
+The parts of the model most likely to grow later are:
+- richer job distribution/channel modeling,
+- configurable automation rules,
+- dashboard/analytics fact structures,
+- offer and onboarding entities,
+- audit/governance/compliance depth,
+- and broader candidate relationship / CRM features.
+
+#### Main modeling tradeoffs
+- `Notification` and `AIArtifact` are kept generic to avoid over-modeling the first version.
+- `department_name` and `location_text` remain attributes on `Requisition` instead of separate reference entities.
+- Manager work queues are represented through pending `CandidateReview`, `RequisitionApproval`, and `InterviewFeedback` records rather than a separate workflow-engine subsystem.
+- Pipeline progression is tracked explicitly through `ApplicationStageTransition`, but no separate analytics warehouse model is introduced at this stage.
+
+---
 
 ## Final recommendation summary
 LTI should move forward as a **collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies**.
