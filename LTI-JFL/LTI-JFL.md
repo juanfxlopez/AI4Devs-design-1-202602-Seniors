@@ -249,10 +249,28 @@ The business model is strongest when LTI is sold not as another place to manage 
 
 # PRD — LTI Collaboration-First Mid-Market ATS
 
-## 4.1 Product vision
+## 4.1 Document purpose and objectives
+
+This PRD defines the product requirements for **LTI**, a collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies.
+
+This section is intended to serve two purposes:
+
+1. **Team alignment and communication**  
+   Provide a shared understanding for product, design, engineering, and go-to-market teams of what LTI is intended to do, for whom, and why.
+
+2. **Structured implementation reference**  
+   Provide a clear, bounded, explicit specification that can guide backlog creation, design decisions, engineering implementation, and AI-assisted development without turning the PRD into a system design document.
+
+This PRD preserves the currently selected product direction and does **not** redefine LTI’s strategy, market, or major scope. It is a product-definition document, not an architecture or data-model specification. Companion references in later sections of the document may inform implementation, but they are outside the scope of this PRD revision.
+
+---
+
+## 4.2 Product overview
+
+### 4.2.1 Product vision
 LTI will become the operating system for mid-market hiring teams that need more structure, coordination, and operational intelligence than lightweight ATS tools provide, but without the heaviness of enterprise suites.
 
-## 4.2 Problem statement
+### 4.2.2 Problem statement
 Mid-market knowledge-work companies often outgrow spreadsheets, email-heavy coordination, and lightweight ATS tooling, but still suffer from several persistent failures:
 - hiring managers delay reviews and decisions,
 - recruiters spend too much time coordinating people and process,
@@ -263,25 +281,15 @@ Mid-market knowledge-work companies often outgrow spreadsheets, email-heavy coor
 
 Current ATS products often solve parts of this problem, but many teams still operate with fragmented decision-making, limited visibility, and too much manual effort.[^aptitude]
 
-## 4.3 Target users
-### Primary users
-- Recruiters / talent acquisition specialists
-- Hiring managers
-- Talent acquisition leaders / Head of Talent
-- Recruiting coordinators / People operations
+### 4.2.3 Product vision in operational terms
+LTI is intended to improve how hiring teams work together, not merely where they store applicants. The product should:
+- improve recruiter–manager alignment,
+- reduce coordination overhead,
+- structure hiring decisions,
+- surface bottlenecks in real time,
+- and use AI to accelerate work without removing human judgment.
 
-### Secondary users
-- Interviewers
-- HR / People leadership
-- New-hire handoff stakeholders
-
-### Economic buyer
-- Head of Talent
-- VP People / People Director
-- CHRO / HR Director
-- Sometimes Finance or Operations for procurement approval
-
-## 4.4 Value proposition
+### 4.2.4 Value proposition
 For employer-side mid-market knowledge-work companies, LTI provides a full-cycle ATS that:
 - improves recruiter–manager alignment,
 - reduces coordination overhead,
@@ -289,45 +297,101 @@ For employer-side mid-market knowledge-work companies, LTI provides a full-cycle
 - surfaces bottlenecks in real time,
 - and uses AI to accelerate work without removing human judgment.
 
-## 4.5 Goals
-### Business goals
+---
+
+## 4.3 Stakeholders and target users
+
+### 4.3.1 Primary users
+- Recruiters / talent acquisition specialists
+- Hiring managers
+- Talent acquisition leaders / Head of Talent
+- Recruiting coordinators / People operations
+
+### 4.3.2 Secondary users
+- Interviewers
+- HR / People leadership
+- New-hire handoff stakeholders
+
+### 4.3.3 Economic buyers
+- Head of Talent
+- VP People / People Director
+- CHRO / HR Director
+- Sometimes Finance or Operations for procurement approval
+
+### 4.3.4 Internal delivery stakeholders
+The PRD should support alignment across:
+- Product management
+- Product design
+- Engineering
+- QA / release management
+- Customer success / implementation
+- Sales / solutions teams, where needed for packaging and customer conversations
+
+### 4.3.5 Stakeholder needs summary
+- **Recruiters** need speed, structure, and reduced admin burden.
+- **Hiring managers** need a simple, low-friction way to review, decide, and give feedback.
+- **Interviewers** need clear interview guidance and easy feedback submission.
+- **Talent leaders** need visibility into bottlenecks, responsiveness, and process quality.
+- **Candidates** need low-friction applications and clear communication.
+- **Economic buyers** need measurable value in speed, consistency, adoption, and workflow improvement.
+
+---
+
+## 4.4 Goals and objectives
+
+### 4.4.1 Business goals
 - Win the initial ICP with a differentiated ATS story
 - Achieve credible replacement value versus incumbent ATS workflows
 - Build a platform foundation for expansion into analytics, AI, and adjacent hiring workflow modules
 
-### Product goals
+### 4.4.2 Product goals
 - Increase hiring manager participation and responsiveness
 - Reduce recruiter administrative time
 - Improve speed and consistency of candidate movement through the funnel
 - Improve quality and usefulness of evaluation data
 - Reduce candidate application friction while preserving hiring signal
 
-## 4.6 Measurable goals
+### 4.4.3 Measurable goals
 The following measurable goals are recommended for the first 12 months after initial production launch for the target ICP.
 
-### Adoption and engagement goals
+#### Adoption and engagement goals
 - At least **70% of active hiring managers** in live customer accounts complete at least one review, approval, or feedback action each month.
 - At least **80% of interview loops** in live customer accounts have complete structured feedback submitted before final debrief.
 - At least **60% of recruiter users** actively use one or more automation rules each month.
 - At least **50% of recruiter users** actively use at least one AI-assisted workflow each month.
 
-### Efficiency goals
+#### Efficiency goals
 - Reduce average **time-to-first-review** for shortlisted candidates by **30%** versus the customer’s baseline process.
 - Reduce average **overdue manager review items** by **40%** versus baseline.
 - Reduce average **time-in-stage** for core screening and interview stages by **20%** versus baseline.
 - Reduce recruiter-reported administrative time per open role by at least **25%**.
 
-### Candidate experience goals
+#### Candidate experience goals
 - Improve completed application rate for CV-based applications by **15%** versus customer baseline where redundant data entry is reduced.
 - Keep candidate save-and-resume failure or abandonment caused by product-side issues below **1%** of started applications.
 
-### Business outcome goals
+#### Business outcome goals
 - Achieve customer gross retention of at least **90%** in the first renewal cycle.
 - Achieve at least **25% attach rate** for advanced automation or AI features among live customers after initial rollout.
 
 These targets should be refined during discovery and pilot phases, but they provide a measurable operating definition of success.
 
-## 4.7 Non-goals
+---
+
+## 4.5 Scope, non-goals, and MVP boundaries
+
+### 4.5.1 Product scope
+LTI is defined as a **full-cycle ATS** for employer-side mid-market knowledge-work companies. Within the currently selected product direction, the core scope includes:
+- requisition creation and approval,
+- structured hiring plan and scorecards,
+- job publication and candidate intake,
+- recruiter and hiring-manager review,
+- interview coordination and structured feedback,
+- collaborative decision-making,
+- offer workflow,
+- and onboarding handoff basics.
+
+### 4.5.2 Non-goals
 LTI is **not** initially intended to be:
 - a full HRIS/HCM platform,
 - a staffing agency CRM,
@@ -335,23 +399,140 @@ LTI is **not** initially intended to be:
 - an enterprise-global governance-heavy suite,
 - or a fully autonomous AI screening and rejection system.
 
-## 4.8 Business model summary
-### Packaging hypothesis
+### 4.5.3 MVP scope
+The MVP should focus on the parts of the product most central to the wedge.
+
+#### In MVP
+- Requisition and approval management
+- Structured hiring plan and scorecards
+- Hiring-manager collaboration workspace
+- Candidate intake and structured candidate profile
+- Basic AI summaries for candidate review and interview prep
+- Core workflow automation (reminders, approvals, communications)
+- Interview coordination and structured feedback
+- Core real-time recruiting ops dashboard
+- Offer workflow and onboarding handoff basics
+
+#### Deliberately later
+- Broad marketplace / ecosystem depth
+- Extensive board syndication breadth
+- Heavy compliance module depth by geography
+- Advanced workforce planning connections
+- Deep CRM / nurture campaigns
+- Enterprise-grade multi-entity administration
+- Advanced AI features that require greater governance complexity
+
+### 4.5.4 Scope boundary notes
+This PRD deliberately focuses on product-level behavior and boundaries. It does not define architecture, data schemas, infrastructure design, or detailed delivery plans.
+
+---
+
+## 4.6 Commercial model context
+
+This subsection is included as product context because packaging and pricing assumptions influence feature prioritization and adoption design, especially around hiring-manager participation.
+
+### 4.6.1 Business model summary
+
+#### Packaging hypothesis
 - **Core platform**: structured ATS workflow + collaboration + basic analytics
 - **Pro tier**: advanced automation + advanced analytics + AI assistance
 - **Enterprise / advanced tier later**: deeper controls, compliance features, advanced integrations, multi-entity administration
 
-### Pricing logic
+#### Pricing logic
 Recommended starting model:
 - annual SaaS subscription,
 - priced by employee band or hiring volume,
 - with generous / unlimited hiring-manager and interviewer access,
 - premium pricing for advanced analytics, AI assistance, and automation depth.
 
-### Why this model fits
+#### Why this model fits
 Mid-market buyers want value tied to hiring complexity and team usage, but penalizing manager participation through per-seat pricing can weaken adoption.
 
-## 4.9 Core use cases
+---
+
+## 4.7 Product structure and main components
+
+The following product structure organizes LTI into the main components needed for a first useful version and provides a practical reference for product, design, and engineering teams.
+
+### 4.7.1 Main product components
+
+1. **Requisition and hiring plan management**
+   - requisition creation,
+   - approvals,
+   - role brief,
+   - hiring plan,
+   - scorecards,
+   - interview structure
+
+2. **Hiring-manager collaboration workspace**
+   - manager inbox,
+   - candidate review queue,
+   - approvals,
+   - feedback tasks,
+   - debrief participation,
+   - decision history
+
+3. **Candidate intake and profile generation**
+   - CV upload and parsing,
+   - extract-first / confirm-second application flow,
+   - role-specific questions,
+   - structured candidate record
+
+4. **Candidate review and signal extraction**
+   - recruiter triage,
+   - manager review,
+   - evidence summaries,
+   - strengths / gaps views,
+   - candidate context for decision-making
+
+5. **Interview coordination and structured feedback**
+   - interview loop planning,
+   - interviewer assignment,
+   - scheduling support,
+   - feedback collection,
+   - debrief preparation
+
+6. **Workflow automation**
+   - reminders,
+   - escalations,
+   - communications,
+   - approvals,
+   - routing,
+   - handoff triggers
+
+7. **Recruiting operations intelligence**
+   - time in stage,
+   - bottleneck alerts,
+   - responsiveness,
+   - conversion metrics,
+   - application friction and abandonment
+
+8. **AI assistance**
+   - candidate summaries,
+   - interview briefs,
+   - debrief summaries,
+   - draft communications,
+   - next-best-action recommendations,
+   - safe feedback draft support
+
+9. **Offer and onboarding handoff**
+   - offer creation,
+   - approvals,
+   - acceptance tracking,
+   - transition checklist,
+   - HRIS / onboarding transfer package
+
+### 4.7.2 Product structure principles
+- The product should support the **full hiring loop**, but the main differentiation comes from collaboration, automation, intelligence, and practical AI.
+- Components should work together as one operating workflow rather than as disconnected modules.
+- Hiring-manager participation must be treated as a first-class product concern.
+
+---
+
+## 4.8 Core use cases
+
+The PRD is centered on the following business-critical use cases:
+
 1. Recruiter and hiring manager define a role and agree on success criteria
 2. Recruiter opens a requisition and routes for approval
 3. Job is published and applications begin arriving
@@ -365,7 +546,12 @@ Mid-market buyers want value tied to hiring complexity and team usage, but penal
 11. Accepted candidate is handed off to onboarding / HR systems
 12. TA leader monitors funnel bottlenecks, manager responsiveness, and conversion rates
 
-## 4.10 Main user stories
+These use cases represent the intended end-to-end product behavior at the PRD level. More formal implementation-oriented use-case modeling exists elsewhere in the document and is outside the editing scope of this section.
+
+---
+
+## 4.9 Main user stories
+
 ### Recruiter user stories
 - As a recruiter, I want to create a requisition with a structured hiring plan so that the role is aligned before candidates enter the pipeline.
 - As a recruiter, I want the system to remind managers and interviewers about pending actions so that I spend less time chasing people manually.
@@ -391,7 +577,9 @@ Mid-market buyers want value tied to hiring complexity and team usage, but penal
 - As a candidate, I want application requirements to feel relevant to the role so that the process feels fair and not unnecessarily repetitive.
 - As a candidate, I want timely, clear communication throughout the process so that I understand my status and next steps.
 
-## 4.11 Functional requirements
+---
+
+## 4.10 Functional requirements
 
 ### FR-1 Requisition and hiring plan management
 The system shall allow recruiters and managers to create a requisition, define role requirements, assign an approval flow, and configure the hiring plan.
@@ -503,33 +691,83 @@ The system shall manage offer workflow and downstream handoff.
 - Handoff checklist
 - Basic HRIS / onboarding transfer package
 
-## 4.12 Non-functional requirements
+---
+
+## 4.11 UX and usability considerations
+
+The UX should directly reinforce the product strategy. LTI should not simply expose ATS objects; it should help each user complete the most important hiring actions quickly and consistently.
+
+### 4.11.1 Recruiter UX
+- Prioritize speed, throughput, and reduced administrative effort.
+- Minimize repetitive clicks for common tasks such as triage, reminders, scheduling, and status updates.
+- Surface pending actions, stalled workflows, and candidate context in one working view.
+
+### 4.11.2 Hiring-manager UX
+- Optimize for infrequent but high-impact usage.
+- Present a simple task-oriented inbox rather than a complex recruiter-centric interface.
+- Show concise, decision-ready candidate evidence rather than raw application overload.
+- Make approvals, reviews, and debrief participation clear and low friction.
+
+### 4.11.3 Interviewer UX
+- Keep interview guidance lightweight and role-specific.
+- Make feedback submission fast, structured, and deadline-aware.
+
+### 4.11.4 Candidate UX
+- Minimize redundant data entry through extract-first / confirm-second flows.
+- Support save-and-resume for longer applications.
+- Ensure role-specific questions feel relevant and proportional to the application purpose.
+- Provide clear confirmation and status communication.
+
+### 4.11.5 Cross-cutting UX principles
+- Prefer explicit workflow state over ambiguity.
+- Make accountability visible without creating unnecessary noise.
+- Clearly distinguish AI-generated assistance from human-entered content.
+- Reduce document overload by surfacing structured evidence and summaries.
+
+---
+
+## 4.12 Non-functional requirements and technical constraints
+
 These are product-level requirements, not implementation design.
 
-### Security and privacy
+### 4.12.1 Security and privacy
 - Role-based access control
 - Audit logging for sensitive actions
 - Protection of candidate PII
 - Configurable retention and deletion policies
 
-### Reliability
+### 4.12.2 Reliability
 - Core workflow actions should be dependable and recoverable
 - Candidate application submission should be robust and not fail silently
 
-### Usability
+### 4.12.3 Usability
 - Recruiter flows must reduce clicks for repetitive operations
 - Hiring-manager experience must be simple enough for infrequent users
 - Candidate application experience must minimize redundant work
 
-### Explainability and governance
+### 4.12.4 Explainability and governance
 - AI-assisted outputs must be clearly marked as AI-generated or AI-assisted where appropriate
 - Sensitive AI usage must allow human review and correction
 - Product behavior should support customer governance requirements in hiring workflows[^ai-act]
 
-### Reporting integrity
+### 4.12.5 Reporting integrity
 - Operational analytics should reflect current workflow state with trustworthy, reconcilable data
 
+### 4.12.6 Interoperability and integration constraints
+- The product must support practical integration with key workflow systems such as calendar, email, and downstream HR handoff systems.
+- Integration requirements should be defined at the workflow level in product terms before implementation design begins.
+- External integrations must not become a prerequisite for core in-product workflow completion in the MVP where avoidable.
+
+### 4.12.7 Technical requirements at PRD level
+- The product must support auditable workflow events for approvals, feedback, decisions, and AI-assisted outputs.
+- The product must preserve traceability from candidate inputs and role requirements to generated summaries and decisions where relevant.
+- Configuration should be preferred over engineering-dependent customization for workflow rules that are intended for customer operations teams.
+- Product behavior must remain compatible with human-in-the-loop AI governance and customer review requirements.
+
+---
+
 ## 4.13 Acceptance criteria
+
 These acceptance criteria are written at the product-feature level so they can guide later story breakdown.
 
 ### AC-1 Structured hiring workflow
@@ -571,32 +809,11 @@ These acceptance criteria are written at the product-feature level so they can g
 - Recruiters can generate and route offers for approval in-product.
 - Accepted candidates can be moved into a defined onboarding handoff workflow without re-entering core information.
 
-## 4.14 MVP scope
-The MVP should focus on the parts of the product most central to the wedge.
+---
 
-### In MVP
-- Requisition and approval management
-- Structured hiring plan and scorecards
-- Hiring-manager collaboration workspace
-- Candidate intake and structured candidate profile
-- Basic AI summaries for candidate review and interview prep
-- Core workflow automation (reminders, approvals, communications)
-- Interview coordination and structured feedback
-- Core real-time recruiting ops dashboard
-- Offer workflow and onboarding handoff basics
+## 4.14 Prioritization
 
-### Deliberately later
-- Broad marketplace / ecosystem depth
-- Extensive board syndication breadth
-- Heavy compliance module depth by geography
-- Advanced workforce planning connections
-- Deep CRM / nurture campaigns
-- Enterprise-grade multi-entity administration
-- Advanced AI features that require greater governance complexity
-
-## 4.15 Prioritization
-
-### P0 — must-have to support positioning
+### 4.14.1 P0 — must-have to support positioning
 - Structured hiring workflow
 - Hiring-manager workspace
 - Workflow automation basics
@@ -604,7 +821,7 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Interview feedback collection
 - Core recruiting ops analytics
 
-### P1 — strong differentiators
+### 4.14.2 P1 — strong differentiators
 - AI candidate summaries
 - AI interview briefs
 - AI debrief summaries
@@ -612,23 +829,33 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Decision logs and accountability signals
 - Safe candidate feedback drafting
 
-### P2 — later expansion
+### 4.14.3 P2 — later expansion
 - Advanced AI recommendations
 - Extended integrations ecosystem
 - Advanced benchmarking
 - Broader CRM / talent pooling capabilities
 - Verticalized templates by industry
 
-## 4.16 Success metrics / KPIs
+### 4.14.4 Prioritization guidance
+Prioritization should continue to favor the features that most strongly reinforce:
+- recruiter–manager collaboration,
+- reduced manual coordination,
+- structured hiring decisions,
+- operational visibility,
+- and practical, governable AI assistance.
 
-### Product usage metrics
+---
+
+## 4.15 Success metrics / KPIs
+
+### 4.15.1 Product usage metrics
 - Hiring-manager weekly active usage
 - Feedback completion rate
 - Average time to review shortlisted candidates
 - Automation utilization rate
 - AI assistance utilization rate
 
-### Outcome metrics
+### 4.15.2 Outcome metrics
 - Time-to-hire
 - Time-in-stage reduction
 - Candidate application completion rate
@@ -636,26 +863,33 @@ The MVP should focus on the parts of the product most central to the wedge.
 - Recruiter time saved per role
 - Reduction in overdue approvals / feedback
 
-### Business metrics
+### 4.15.3 Business metrics
 - Logo acquisition in target ICP
 - Time-to-first-live-role after purchase
 - Gross retention and net retention
 - Expansion into advanced analytics / AI tiers
 - Win rate versus incumbent ATS alternatives
 
-## 4.17 Assumptions, dependencies, and risks
+### 4.15.4 Metric interpretation notes
+- Product usage metrics should be read together with workflow quality metrics, not in isolation.
+- AI usage alone is not success; the important measure is whether AI improves speed, clarity, and consistency without degrading trust.
+- Candidate experience metrics should be evaluated with signal quality, not just completion volume.
 
-### Assumptions
+---
+
+## 4.16 Assumptions, dependencies, risks, and open questions
+
+### 4.16.1 Assumptions
 - Mid-market buyers value manager adoption and workflow quality enough to switch ATS
 - Recruiter pain is operational enough that automation and analytics will resonate strongly
 - Candidate-signal improvement matters more than simply collecting more text or more applicants
 
-### Dependencies
+### 4.16.2 Dependencies
 - A strong initial UX for recruiters and hiring managers
 - Reliable integrations with calendars, email, and downstream HR handoff systems
 - Careful AI governance and messaging
 
-### Risks
+### 4.16.3 Risks
 1. **Crowded market risk**  
    The ATS category is competitive; weak differentiation will be punished quickly.
 
@@ -671,12 +905,47 @@ The MVP should focus on the parts of the product most central to the wedge.
 5. **Data quality risk**  
    Recruiting analytics and AI usefulness depend on disciplined workflow capture.
 
-## 4.18 Open questions for the next iteration
+### 4.16.4 Open questions for the next iteration
 - Should LTI begin with one functional-industry focus inside knowledge-work (e.g., B2B SaaS / tech-enabled services)?
 - How much configurability should the initial workflow engine expose versus guided defaults?
 - Which candidate-facing feedback features should be enabled by default versus optional?
 - What is the best pricing packaging for encouraging hiring-manager participation without reducing revenue potential?
 - Which integrations are truly required for first-wave adoption versus nice-to-have?
+
+---
+
+## 4.17 Supporting notes
+
+### 4.17.1 Relationship to later sections
+Later sections of the document contain more implementation-oriented companion references, including formalized use cases and a logical data model. Those sections are intentionally outside the scope of this PRD revision and should be treated as supporting references rather than replacements for the product requirements defined here.
+
+### 4.17.2 PRD usage guidance
+This PRD should be used to:
+- align stakeholders on product intent and scope,
+- derive epics, stories, and acceptance tests,
+- guide UX and workflow design,
+- bound implementation decisions,
+- and support AI-assisted development with explicit functional and non-functional expectations.
+
+### 4.17.3 Deliberate exclusions from this PRD
+This section does **not** define:
+- system architecture,
+- detailed technical design,
+- database schema,
+- delivery dates,
+- sprint plans,
+- or staffing plans.
+
+---
+
+## Final recommendation summary
+LTI should move forward as a **collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies**.
+
+This direction is recommended because it best fits the existing LTI product scope, targets a segment with real pain and real willingness to pay, and allows meaningful differentiation beyond generic ATS or generic AI positioning. The product should win not by trying to be everything to everyone, but by being visibly better at:
+- recruiter–manager collaboration,
+- workflow automation,
+- recruiting operations intelligence,
+- and trustworthy AI assistance.
 
 ---
 
