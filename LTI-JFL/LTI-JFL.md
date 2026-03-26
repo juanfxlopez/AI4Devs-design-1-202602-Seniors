@@ -938,7 +938,7 @@ This section does **not** define:
 
 ---
 
-## Final recommendation summary
+## 4.18 Final recommendation summary
 LTI should move forward as a **collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies**.
 
 This direction is recommended because it best fits the existing LTI product scope, targets a segment with real pain and real willingness to pay, and allows meaningful differentiation beyond generic ATS or generic AI positioning. The product should win not by trying to be everything to everyone, but by being visibly better at:
@@ -2176,17 +2176,6 @@ The parts of the model most likely to grow later are:
 - `department_name` and `location_text` remain attributes on `Requisition` instead of separate reference entities.
 - Manager work queues are represented through pending `CandidateReview`, `RequisitionApproval`, and `InterviewFeedback` records rather than a separate workflow-engine subsystem.
 - Pipeline progression is tracked explicitly through `ApplicationStageTransition`, but no separate analytics warehouse model is introduced at this stage.
-
----
-
-## Final recommendation summary
-LTI should move forward as a **collaboration-first, automation-heavy, AI-assisted full-cycle ATS for employer-side mid-market knowledge-work companies**.
-
-This direction is recommended because it best fits the existing LTI product scope, targets a segment with real pain and real willingness to pay, and allows meaningful differentiation beyond generic ATS or generic AI positioning. The product should win not by trying to be everything to everyone, but by being visibly better at:
-- recruiter–manager collaboration,
-- workflow automation,
-- recruiting operations intelligence,
-- and trustworthy AI assistance.
 
 ---
 
