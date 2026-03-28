@@ -2535,6 +2535,41 @@ The design is deliberately **hybrid** in behavior:
 
 That matches the requirements for dependable workflow actions, auditable workflow events, trustworthy operational analytics, configurable automation, and reviewable AI assistance.
 
+### 7.1.1 Why this architecture was selected
+
+This architecture was selected because it is the best fit for the shape of the MVP defined in sections 4–6. LTI is not a small CRUD application, but it is also not yet a system that justifies early service fragmentation. The approved MVP contains one tightly connected hiring workflow across requisition, application, review, interview, decision, offer, and onboarding handoff. Those flows benefit from a **single authoritative transactional core** with clear module boundaries.
+
+At the same time, the MVP includes enough asynchronous behavior that a purely synchronous or scheduler-heavy monolith would be too weak. Workflow reminders, escalations, candidate communications, AI-assisted artifacts, operational alerts, calendar side effects, and onboarding handoff triggers all need durable background processing. Internal domain events and async workers provide that capability without forcing the core workflow into a distributed-services architecture too early.
+
+This option was chosen over a simpler **layered modular monolith** because LTI depends too heavily on auditable automation, derived task views, and near-real-time operational projections. It was chosen over a **pure hexagonal modular monolith without stronger internal eventing** because the MVP’s workflow automation and operational visibility requirements are too central to leave as secondary job logic. It was chosen over a **coarse-grained service architecture** because the product still benefits more from one consistent operational model than from independent service deployments. In short, the selected architecture optimizes for **speed of delivery, transactional clarity, maintainability, async extensibility, and future evolution without premature distribution**.
+
+### 7.1.2 Stage-1 decision record and approved architectural defaults
+
+The following architectural defaults were selected during stage 1 and are intentionally preserved here so the reasoning behind the architecture is not lost:
+
+1. **Separate candidate-facing web app, shared backend core**  
+   The candidate experience and the internal ATS serve different users, security postures, and traffic patterns, so they should remain separate web surfaces. However, both should use the same transactional ATS core in v1 to avoid splitting the workflow model too early.
+
+2. **Bounded workflow automation, not a general workflow platform**  
+   `WorkflowAutomationRule` should remain intentionally constrained to reminders, escalations, approval routing, communications, alert creation, and handoff triggers. The MVP does not justify a generic workflow/BPM engine.
+
+3. **Near-real-time workspace and recruiting ops projections**  
+   The hiring-manager workspace and recruiting ops dashboard should be served primarily from projection tables or read models refreshed by internal events. This preserves fast task-oriented views and operational visibility while keeping one transactional source of truth.
+
+4. **Operational ATS search only in v1**  
+   Search in the first production version should focus on requisitions, candidates, applications, reviews, offers, alerts, and task views. Broader talent-pool discovery or CRM-style search is deliberately later.
+
+5. **Pragmatic launch integrations only**  
+   The default integration set for v1 is email/notifications, calendar support, object storage, one AI/parsing provider, and a shallow downstream onboarding handoff path. Integrations should support the workflow, not define the architecture.
+
+6. **Logical multi-tenancy as the default tenancy model**  
+   `Organization` remains the tenant root, with tenant isolation enforced through application logic, authorization, and data scoping. Stronger per-tenant runtime isolation is intentionally deferred unless customer or regulatory requirements force it.
+
+7. **Onboarding handoff basics only**  
+   The architecture supports accepted-candidate handoff, transfer package preparation, checklist tracking, and handoff status. It does not attempt to model full downstream HRIS onboarding execution in the MVP.
+
+These defaults are part of the architectural decision itself. They constrain the system toward a focused first production version and keep sections 4–8 aligned around the same MVP interpretation.
+
 ---
 
 ### 7.2 Major system building blocks
