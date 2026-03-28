@@ -2510,3 +2510,354 @@ The model still avoids:
 - and advanced AI recommendation entities.
 
 That keeps section 6 aligned with the MVP while removing the old under-modeling of offer, handoff, automation, and operational visibility.
+
+## 7. High-level system design
+
+### 7.1 Architecture summary
+
+The first production version of LTI should be implemented as a **hexagonal modular monolith with internal domain events and async workers**. Two web surfaces sit on top of one shared domain core: an **Internal ATS Web App** for recruiters, hiring managers, interviewers, coordinators, and talent leaders, and a separate **Candidate Application Web App** for public job discovery and application submission. The authoritative system of record remains one multi-tenant transactional backend, because the MVP is still one connected workflow from requisition through onboarding handoff, and sections 4–6 explicitly model both the **hiring-manager workspace** and the **recruiting ops dashboard** as **derived views** over workflow state rather than as separate workflow or analytics subsystems. Offer flow and onboarding handoff basics are part of the MVP; deep downstream HRIS execution is not.
+
+The design is deliberately **hybrid** in behavior:
+- **synchronous, transactional commands** for authoritative workflow state
+- **asynchronous internal event processing** for reminders, escalations, notifications, AI generation, alert creation, handoff triggers, and read-model projection updates
+
+That matches the requirements for dependable workflow actions, auditable workflow events, trustworthy operational analytics, configurable automation, and reviewable AI assistance.
+
+### 7.2 Major system building blocks
+
+**1. Internal ATS Web App**  
+This is the authenticated experience for internal users. It covers requisitions, hiring plans, the hiring-manager collaboration workspace, candidate review, interviews, debriefs, decisions, offers, handoff tracking, automation-rule configuration, and the recruiting ops dashboard. It is optimized for low-friction manager participation and task completion.
+
+**2. Candidate Application Web App**  
+This is the public-facing candidate surface. It serves published `JobPosting` pages, CV upload, extract-first/confirm-second application flow, role-specific application questions, save/resume, and final submission acknowledgment. Candidate documents upload directly to object storage using pre-signed access so that large-file transfer does not burden the core request path. Candidate state still becomes authoritative only when the backend commits the `Application`, related responses, and document references. The structured candidate profile remains a **logical view** assembled from `Candidate`, `CandidateDocument`, `Application`, `ApplicationResponse`, and relevant `AIArtifact` records rather than a separate source-of-truth entity.
+
+**3. ATS Core Backend**  
+This is one deployable hexagonal modular monolith. It contains:
+- inbound adapters: Internal API, Candidate API, integration/webhook endpoints
+- application services: command handlers, query services, authorization context, audit context
+- domain modules:
+  - **Requisition and Hiring Plan Management**
+  - **Candidate Intake and Profile Generation**
+  - **Candidate Review and Signal Extraction**
+  - **Interview Coordination and Structured Feedback**
+  - **Hiring Decision**
+  - **Offer**
+  - **Onboarding Handoff**
+  - **Workflow Automation**
+  - **Notification**
+  - **OperationalAlert**
+  - **AIArtifact**
+- outbound adapters: PostgreSQL repositories, object storage, email/notification provider, calendar provider, AI/parsing provider, downstream handoff adapter
+
+This keeps the business logic independent from delivery technology while preserving one authoritative workflow core.
+
+**4. Async Worker Runtime**  
+This is a separate runtime, not a separate product domain. It consumes **internal domain events** emitted by the monolith and handles:
+- `WorkflowAutomationRule` evaluation
+- reminders, escalations, and candidate communications
+- projection updates for the manager workspace
+- projection updates for the recruiting ops dashboard
+- `OperationalAlert` creation and resolution side effects
+- AI/CV parsing jobs and `AIArtifact` persistence
+- calendar synchronization
+- onboarding handoff initiation and downstream delivery
+- retry, idempotency, and failure handling
+
+This runtime is the key difference between the approved architecture and a plain synchronous monolith.
+
+**5. Data layer**  
+For v1, use:
+- **PostgreSQL** as the primary transactional store
+- **projection tables/read models in the same PostgreSQL cluster** for workspace and ops queries
+- an **outbox table** in PostgreSQL for reliable event publication
+- **object storage** for CVs and candidate attachments
+- **append-only audit tables** for sensitive actions and compliance traceability
+
+This is intentionally not a separate analytics warehouse and not a separate search platform in v1. Operational search should be handled with PostgreSQL filtered queries plus selective full-text indexing on requisitions, candidates, applications, offers, alerts, and task projections. That fits the product decision to keep the dashboard and workspace derived from current workflow state rather than from a second analytical source of truth.
+
+**6. External systems**  
+The MVP should integrate with:
+- **SSO / IdP** for internal-user authentication
+- **email / in-app / optional SMS notification delivery**
+- **calendar service** for interview coordination support
+- **AI / parsing provider** for CV parsing and assistive generation
+- **downstream HRIS / onboarding tool / email package** for shallow handoff
+
+These integrations are important but should not be hard prerequisites for completing the core in-product workflow where avoidable.
+
+### 7.3 Responsibilities and interaction patterns
+
+#### Synchronous path: authoritative workflow state
+
+All state-changing operations that define the official hiring workflow should run synchronously inside the ATS Core Backend and commit in a single database transaction. That includes:
+- requisition creation, approval routing, approval decisions, and publication
+- application submit/finalize
+- candidate review requests and review submission
+- interview planning and feedback submission
+- hiring decision recording
+- offer drafting and approval decisions
+- handoff item updates and handoff status updates
+
+The backend should only return success after durable persistence. This keeps requisition, application, review, interview, decision, offer, and handoff state consistent and auditable. It also matches the requirement that core workflow actions be dependable and recoverable, and that candidate submission not fail silently.
+
+#### Asynchronous path: derived views and side effects
+
+Immediately after a successful transaction, the same transaction writes one or more **domain events** into the outbox. A relay publishes them to an internal durable queue. Workers then process those events idempotently.
+
+Representative events for v1:
+- `RequisitionSubmitted`
+- `RequisitionApprovalOverdue`
+- `ApplicationSubmitted`
+- `CandidateReviewRequested`
+- `CandidateReviewCompleted`
+- `InterviewScheduled`
+- `InterviewFeedbackSubmitted`
+- `HiringDecisionRecorded`
+- `OfferSubmittedForApproval`
+- `OfferAccepted`
+- `HandoffStarted`
+- `HandoffCompleted`
+
+Typical async consumers:
+- **Rule evaluator** for reminders, escalations, approval routing, and handoff triggers
+- **Workspace projector** for pending manager/recruiter tasks
+- **Ops projector** for time-in-stage, responsiveness, overdue actions, abandonment, offer status, and open alerts
+- **Notification dispatcher** for candidate and internal messages
+- **AI processor** for `AIArtifact` creation and parsing
+- **Integration workers** for calendar sync and downstream handoff
+
+This is not a full distributed EDA system; the queue is not the source of truth. PostgreSQL remains the source of truth, and the event pipeline exists to decouple side effects and read models from core commands.
+
+#### Workspace and dashboard query model
+
+LTI should use a **pragmatic internal CQRS-lite pattern**, not a separate distributed CQRS architecture:
+- **command side** writes authoritative workflow state
+- **query side** reads projection tables optimized for the manager workspace and ops dashboard
+- detail views can still read normalized transactional tables directly where appropriate
+
+The **hiring-manager collaboration workspace** should be projected from pending `RequisitionApproval`, `CandidateReview`, `InterviewFeedback`, `OfferApproval`, `OnboardingHandoffItem`, and active `OperationalAlert` records. The **recruiting ops dashboard** should be projected from `ApplicationStageTransition`, due dates, lifecycle timestamps, `WorkflowAutomationRule`, `Notification`, and `OperationalAlert`.
+
+#### AI-assisted features
+
+AI in v1 should remain a bounded assistive layer:
+- CV parsing for candidate intake
+- candidate summaries / evidence maps
+- interview briefs
+- debrief summaries
+- draft communications
+
+Every generated output should be persisted as `AIArtifact` with traceability (`input_reference_json`), generator metadata, and human review state. AI output may inform a review, interview, decision, or draft notification, but it must never directly mutate workflow state without an explicit user action.
+
+### 7.4 Authentication, authorization, security, and observability
+
+**Authentication and authorization**  
+- Internal users authenticate through SSO/OIDC.
+- Candidate flows use public routes plus application-scoped session or save/resume tokens.
+- Authorization is enforced in the backend, not only in the UI.
+- Access decisions combine:
+  - `Organization` tenant context
+  - internal `user_type`
+  - requisition-team membership
+  - approver / reviewer / interviewer / decision-participant assignment
+  - candidate/public-session context where relevant
+
+This is necessary because the data model is both tenant-scoped and workflow-assignment-scoped.
+
+**Security and governance**  
+- Encrypt candidate PII at rest and in transit.
+- Store candidate files in object storage with short-lived signed access.
+- Rate-limit and bot-protect public application endpoints.
+- Write audit records for approvals, stage changes, feedback submission, decisions, offer actions, handoff actions, rule changes, and AI review actions.
+- Enforce retention/deletion policies by tenant policy.
+- Require human review on sensitive AI-generated drafts before send/save.
+
+**Observability**  
+Use three layers of observability:
+1. **technical telemetry**: request latency, error rates, queue lag, worker retries, integration failures, object-storage failures  
+2. **workflow telemetry**: overdue approvals/reviews/feedback, alert counts, projection freshness, handoff failures  
+3. **governance telemetry**: AI artifact review status, audit-log coverage, candidate-submission failure rate, notification delivery failures
+
+Every sync request and every async event should carry a correlation ID so that a requisition, application, interview loop, offer, or handoff can be traced across API, DB, queue, worker, and external integration logs. This is particularly important because the ops dashboard must remain reconcilable to the underlying workflow state.
+
+### 7.5 Deployment/runtime implications
+
+For v1, the runtime shape should be:
+- **2 frontend deployments**: internal ATS and candidate app
+- **1 ATS Core Backend deployment**: stateless API instances
+- **3 worker pools**:
+  - general automation/projection workers
+  - integration workers
+  - heavier AI/parsing workers
+- **1 PostgreSQL cluster**
+- **1 object storage bucket group**
+- **1 durable internal queue/broker**
+
+This lets you scale API traffic, automation volume, and AI/parsing load independently without splitting the domain into microservices too early.
+
+### 7.6 Mermaid high-level architecture diagram
+
+```mermaid
+flowchart LR
+  subgraph Apps["User-facing applications"]
+    INTERNAL["Internal ATS Web App"]
+    CANDIDATE["Candidate Application Web App"]
+  end
+
+  subgraph Platform["LTI platform"]
+    subgraph CORE["ATS Core Backend — hexagonal modular monolith"]
+      APIAD["API adapters<br/>Internal API · Candidate API · Webhooks"]
+      AUTH["Identity + authorization<br/>tenant resolution · scoped access · audit context"]
+      CMD["Command services<br/>transactional workflow commands"]
+      DOMAIN["Domain modules<br/>Requisition · HiringPlan · Application · Review · Interview · Decision · Offer · Handoff"]
+      QUERY["Query services<br/>workspace · ops dashboard · operational search"]
+      OUTBOX["Outbox<br/>internal domain events"]
+    end
+
+    subgraph WORKERS["Async Worker Runtime"]
+      ROUTER["Event intake + router"]
+      RULES["WorkflowAutomationRule evaluator"]
+      PROJ["Workspace / ops projection workers"]
+      COMMS["Notification workers"]
+      AIPROC["AIArtifact + CV parsing workers"]
+      INTEG["Calendar + handoff workers"]
+    end
+  end
+
+  subgraph DATA["Data stores"]
+    PG[("PostgreSQL<br/>transactional + projections + audit + outbox")]
+    OBJ[("Object Storage<br/>candidate documents")]
+    QUEUE[("Durable internal queue")]
+  end
+
+  subgraph EXT["External systems"]
+    IDP["SSO / IdP"]
+    MSG["Email / SMS / in-app provider"]
+    CAL["Calendar service"]
+    AI["AI / parsing provider"]
+    HRIS["HRIS / onboarding tool / email package"]
+  end
+
+  INTERNAL --> IDP
+  INTERNAL --> APIAD
+  CANDIDATE --> APIAD
+  CANDIDATE -. direct CV upload .-> OBJ
+
+  APIAD --> AUTH
+  APIAD --> CMD
+  APIAD --> QUERY
+  AUTH --> IDP
+
+  CMD --> DOMAIN
+  DOMAIN --> PG
+  QUERY --> PG
+  DOMAIN --> OBJ
+  CMD --> OUTBOX
+
+  OUTBOX -. publishes events .-> QUEUE
+  QUEUE -.-> ROUTER
+  ROUTER -.-> RULES
+  ROUTER -.-> PROJ
+  ROUTER -.-> COMMS
+  ROUTER -.-> AIPROC
+  ROUTER -.-> INTEG
+
+  RULES -. loads rules / dispatches actions .-> PG
+  RULES -. triggers reminders / messages .-> COMMS
+  RULES -. triggers alert updates .-> PROJ
+
+  PROJ -. updates workspace / dashboard / alerts .-> PG
+  COMMS -. persists delivery state .-> PG
+  AIPROC -. stores AIArtifact state .-> PG
+  AIPROC -. reads / writes files .-> OBJ
+
+  COMMS -. sends .-> MSG
+  INTEG -. syncs interviews .-> CAL
+  INTEG -. starts handoff .-> HRIS
+  AIPROC -. generates parsing / summaries .-> AI
+```
+
+Solid arrows represent synchronous command/query paths. Dashed arrows represent asynchronous event-driven processing.
+
+
+## 8. Focused C4 diagram
+
+### 8.1 Chosen area and why it is the right one
+
+The most relevant area to document in depth is the **Async Worker Runtime**. That is where the approved architecture actually differentiates itself from a simpler modular monolith. It is the layer that turns authoritative workflow state into:
+- the derived **hiring-manager workspace**
+- the derived **recruiting ops dashboard**
+- reminders, escalations, and communications
+- `OperationalAlert` lifecycle
+- `AIArtifact` generation
+- calendar side effects
+- onboarding handoff triggers
+
+This is also the place where LTI keeps one transactional core **without** introducing a separate workflow engine or analytics mart, which is exactly how sections 4–6 frame the MVP.
+
+### 8.2 C4 component-level view — Async Worker Runtime
+
+```mermaid
+C4Component
+title Component view — Async Worker Runtime
+
+Container_Ext(core, "ATS Core Backend", "Hexagonal modular monolith", "Commits authoritative workflow state and writes internal domain events")
+ContainerQueue_Ext(queue, "Durable Internal Queue", "Queue", "Receives outbox events")
+ContainerDb_Ext(db, "PostgreSQL", "Database", "Transactional data, outbox, projections, audit")
+Container_Ext(store, "Object Storage", "Blob storage", "Candidate documents and attachments")
+System_Ext(email, "Email / Notification Provider", "Delivers email, SMS, and in-app notifications")
+System_Ext(calendar, "Calendar Service", "Interview scheduling integration")
+System_Ext(ai, "AI / Parsing Provider", "CV parsing and assistive generation")
+System_Ext(hris, "Downstream HRIS / Onboarding Tool", "Receives basic handoff package")
+
+Container_Boundary(worker, "Async Worker Runtime") {
+  Component(intake, "Event Intake", "Worker component", "Consumes queued domain events and enforces idempotency")
+  Component(router, "Event Router", "Worker component", "Routes events to the correct handlers")
+  Component(rules, "WorkflowAutomationRule Evaluator", "Worker component", "Evaluates reminders, escalations, communications, approval routing, and handoff triggers")
+  Component(taskproj, "Workspace Projection Updater", "Worker component", "Builds recruiter and hiring-manager task views")
+  Component(opsproj, "Ops Projection & Alert Updater", "Worker component", "Updates recruiting ops projections and OperationalAlert")
+  Component(notif, "Notification Dispatcher", "Worker component", "Creates Notification records and sends messages")
+  Component(aiart, "AIArtifact Processor", "Worker component", "Generates reviewable AIArtifact outputs with traceability")
+  Component(calsync, "Calendar Adapter", "Worker component", "Synchronizes interview scheduling state")
+  Component(handoff, "Handoff Adapter", "Worker component", "Creates onboarding handoff package and pushes to downstream destination")
+  Component(failure, "Retry / Failure Handler", "Worker component", "Retries transient failures and records terminal failures")
+}
+
+Rel(core, queue, "Publishes internal domain events", "Outbox relay")
+Rel(queue, intake, "Delivers events")
+Rel(intake, router, "Normalizes and routes events")
+Rel(router, rules, "Routes workflow-rule events")
+Rel(router, taskproj, "Routes task-view events")
+Rel(router, opsproj, "Routes lifecycle / SLA events")
+Rel(router, notif, "Routes communication events")
+Rel(router, aiart, "Routes AI / parsing events")
+Rel(router, calsync, "Routes interview scheduling events")
+Rel(router, handoff, "Routes offer accepted / handoff events")
+
+Rel(rules, notif, "Triggers reminders / candidate messages")
+Rel(rules, opsproj, "Triggers alerts and exception updates")
+
+Rel(taskproj, db, "Updates workspace projections")
+Rel(opsproj, db, "Updates ops projections and OperationalAlert")
+Rel(notif, db, "Persists Notification state")
+Rel(aiart, db, "Persists AIArtifact metadata and review status")
+Rel(aiart, store, "Reads candidate files")
+Rel(aiart, ai, "Generates parsing and summaries")
+Rel(calsync, calendar, "Creates or updates interview events")
+Rel(handoff, hris, "Sends basic transfer package")
+Rel(notif, email, "Delivers messages")
+
+Rel(intake, failure, "On handler failure")
+Rel(failure, db, "Persists retry / dead-letter state")
+
+UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+### 8.3 Interpretation of the C4 view
+
+This component view shows the main engineering intent of the approved architecture:
+
+- **Event Intake + Retry / Failure Handler** make async processing safe under at-least-once delivery.
+- **WorkflowAutomationRule Evaluator** stays bounded to the documented trigger/action model instead of becoming a general workflow platform.
+- **Workspace Projection Updater** and **Ops Projection & Alert Updater** keep the manager workspace and recruiting ops dashboard as **derived read models**, not as separate systems of record.
+- **AIArtifact Processor** preserves the governance requirements by storing traceable, reviewable AI outputs instead of letting model responses directly mutate hiring outcomes.
+- **Calendar Adapter** and **Handoff Adapter** keep external side effects outside the synchronous transaction, while still making their status visible in-product.
