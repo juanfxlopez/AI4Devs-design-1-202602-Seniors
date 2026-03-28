@@ -2521,6 +2521,8 @@ The model still avoids:
 
 That keeps section 6 aligned with the MVP while removing the old under-modeling of offer, handoff, automation, and operational visibility.
 
+---
+
 ## 7. High-level system design
 
 ### 7.1 Architecture summary
@@ -2541,13 +2543,13 @@ That matches the requirements for dependable workflow actions, auditable workflo
 This is the authenticated experience for internal users. It covers requisitions, hiring plans, the hiring-manager collaboration workspace, candidate review, interviews, debriefs, decisions, offers, handoff tracking, automation-rule configuration, and the recruiting ops dashboard. It is optimized for low-friction manager participation and task completion.
 
 **2. Candidate Application Web App**  
-This is the public-facing candidate surface. It serves published `JobPosting` pages, CV upload, extract-first/confirm-second application flow, role-specific application questions, save/resume, and final submission acknowledgment. Candidate documents upload directly to object storage using pre-signed access so that large-file transfer does not burden the core request path. Candidate state still becomes authoritative only when the backend commits the `Application`, related responses, and document references. The structured candidate profile remains a **logical view** assembled from `Candidate`, `CandidateDocument`, `Application`, `ApplicationResponse`, and relevant `AIArtifact` records rather than a separate source-of-truth entity.
+This is the public-facing candidate surface. It serves published `JobPosting` pages, CV upload, extract-first/confirm-second application flow, role-specific application questions, save/resume, and final submission acknowledgment. Candidate documents are stored in object storage; direct signed upload is the recommended implementation approach for large-file handling so that large-file transfer does not burden the core request path. Candidate state still becomes authoritative only when the backend commits the `Application`, related responses, and document references. The structured candidate profile remains a **logical view** assembled from `Candidate`, `CandidateDocument`, `Application`, `ApplicationResponse`, and relevant `AIArtifact` records rather than a separate source-of-truth entity.
 
 **3. ATS Core Backend**  
 This is one deployable hexagonal modular monolith. It contains:
 - inbound adapters: Internal API, Candidate API, integration/webhook endpoints
 - application services: command handlers, query services, authorization context, audit context
-- domain modules:
+- **core workflow modules:**
   - **Requisition and Hiring Plan Management**
   - **Candidate Intake and Profile Generation**
   - **Candidate Review and Signal Extraction**
@@ -2555,6 +2557,7 @@ This is one deployable hexagonal modular monolith. It contains:
   - **Hiring Decision**
   - **Offer**
   - **Onboarding Handoff**
+- **supporting workflow and intelligence modules:**
   - **Workflow Automation**
   - **Notification**
   - **OperationalAlert**
@@ -2616,9 +2619,9 @@ The backend should only return success after durable persistence. This keeps req
 
 #### Asynchronous path: derived views and side effects
 
-Immediately after a successful transaction, the same transaction writes one or more **domain events** into the outbox. A relay publishes them to an internal durable queue. Workers then process those events idempotently.
+Immediately after a successful transaction, the same transaction writes one or more **domain events** into the outbox. A relay publishes them to a **durable internal messaging layer**. Workers then process those events idempotently.
 
-Representative events for v1:
+Representative event names for v1 include the following; these are **conceptual examples**, not final contract names:
 - `RequisitionSubmitted`
 - `RequisitionApprovalOverdue`
 - `ApplicationSubmitted`
@@ -2640,7 +2643,7 @@ Typical async consumers:
 - **AI processor** for `AIArtifact` creation and parsing
 - **Integration workers** for calendar sync and downstream handoff
 
-This is not a full distributed EDA system; the queue is not the source of truth. PostgreSQL remains the source of truth, and the event pipeline exists to decouple side effects and read models from core commands.
+This is not a full distributed EDA system; the messaging layer is not the source of truth. PostgreSQL remains the source of truth, and the event pipeline exists to decouple side effects and read models from core commands.
 
 #### Workspace and dashboard query model
 
@@ -2689,11 +2692,11 @@ This is necessary because the data model is both tenant-scoped and workflow-assi
 
 **Observability**  
 Use three layers of observability:
-1. **technical telemetry**: request latency, error rates, queue lag, worker retries, integration failures, object-storage failures  
+1. **technical telemetry**: request latency, error rates, messaging lag, worker retries, integration failures, object-storage failures  
 2. **workflow telemetry**: overdue approvals/reviews/feedback, alert counts, projection freshness, handoff failures  
 3. **governance telemetry**: AI artifact review status, audit-log coverage, candidate-submission failure rate, notification delivery failures
 
-Every sync request and every async event should carry a correlation ID so that a requisition, application, interview loop, offer, or handoff can be traced across API, DB, queue, worker, and external integration logs. This is particularly important because the ops dashboard must remain reconcilable to the underlying workflow state.
+Every sync request and every async event should carry a correlation ID so that a requisition, application, interview loop, offer, or handoff can be traced across API, DB, messaging, worker, and external integration logs. This is particularly important because the ops dashboard must remain reconcilable to the underlying workflow state.
 
 ---
 
@@ -2708,7 +2711,7 @@ For v1, the runtime shape should be:
   - heavier AI/parsing workers
 - **1 PostgreSQL cluster**
 - **1 object storage bucket group**
-- **1 durable internal queue/broker**
+- **1 durable internal messaging layer (queue/broker)**
 
 This lets you scale API traffic, automation volume, and AI/parsing load independently without splitting the domain into microservices too early.
 
@@ -2728,7 +2731,7 @@ flowchart LR
       APIAD["API adapters<br/>Internal API · Candidate API · Webhooks"]
       AUTH["Identity + authorization<br/>tenant resolution · scoped access · audit context"]
       CMD["Command services<br/>transactional workflow commands"]
-      DOMAIN["Domain modules<br/>Requisition · HiringPlan · Application · Review · Interview · Decision · Offer · Handoff"]
+      DOMAIN["Core workflow modules<br/>Requisition · HiringPlan · Application · Review · Interview · Decision · Offer · Handoff<br/>Supporting modules<br/>WorkflowAutomation · Notification · OperationalAlert · AIArtifact"]
       QUERY["Query services<br/>workspace · ops dashboard · operational search"]
       OUTBOX["Outbox<br/>internal domain events"]
     end
@@ -2746,7 +2749,7 @@ flowchart LR
   subgraph DATA["Data stores"]
     PG[("PostgreSQL<br/>transactional + projections + audit + outbox")]
     OBJ[("Object Storage<br/>candidate documents")]
-    QUEUE[("Durable internal queue")]
+    QUEUE[("Durable internal messaging layer")]
   end
 
   subgraph EXT["External systems"]
@@ -2760,7 +2763,7 @@ flowchart LR
   INTERNAL --> IDP
   INTERNAL --> APIAD
   CANDIDATE --> APIAD
-  CANDIDATE -. direct CV upload .-> OBJ
+  CANDIDATE -. recommended direct signed upload .-> OBJ
 
   APIAD --> AUTH
   APIAD --> CMD
@@ -2813,7 +2816,7 @@ The most relevant area to document in depth is the **Async Worker Runtime**. Tha
 - calendar side effects
 - onboarding handoff triggers
 
-This is also the place where LTI keeps one transactional core **without** introducing a separate workflow engine or analytics mart, which is exactly how sections 4–6 frame the MVP.
+This is also the place where LTI keeps one transactional core **without** introducing a separate workflow engine or analytics mart, which is exactly how sections 4–6 frame the MVP. The ATS Core Backend remains the authoritative transactional system, but the Async Worker Runtime is the best zoom-in because it shows how automation, derived views, AI processing, and integrations are added without fragmenting the transactional core.
 
 ---
 
@@ -2824,7 +2827,7 @@ C4Component
 title Component view — Async Worker Runtime
 
 Container_Ext(core, "ATS Core Backend", "Hexagonal modular monolith", "Commits authoritative workflow state and writes internal domain events")
-ContainerQueue_Ext(queue, "Durable Internal Queue", "Queue", "Receives outbox events")
+ContainerQueue_Ext(queue, "Durable Internal Messaging Layer", "Queue/Broker", "Receives outbox events")
 ContainerDb_Ext(db, "PostgreSQL", "Database", "Transactional data, outbox, projections, audit")
 Container_Ext(store, "Object Storage", "Blob storage", "Candidate documents and attachments")
 System_Ext(email, "Email / Notification Provider", "Delivers email, SMS, and in-app notifications")
@@ -2874,6 +2877,8 @@ Rel(failure, db, "Persists retry / dead-letter state")
 
 UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
+
+**Portability note:** This diagram uses Mermaid C4 syntax. Depending on the rendering tool or documentation pipeline, a fallback rendered image or simplified Mermaid flowchart may be needed for publishing.
 
 ---
 
