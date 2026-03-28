@@ -1297,6 +1297,8 @@ The model does **not** attempt to define:
 - External integrations such as calendar, email, and downstream HRIS handoff are represented by workflow-level references and status fields, not by full external-system schemas.
 - AI artifacts are always assistive and reviewable. They are never treated as autonomous final hiring decisions.
 
+---
+
 ### 6.2 Entity inventory
 
 #### Core entities
@@ -1345,6 +1347,8 @@ The model does **not** attempt to define:
 | DecisionParticipant | Records stakeholder participation in the final debrief or decision |
 | DecisionCriterionAssessment | Records final criterion-level decision rationale |
 | OnboardingHandoffItem | Checklist or task item within the onboarding handoff |
+
+---
 
 ### 6.3 Detailed logical data model
 
@@ -2032,6 +2036,8 @@ The model does **not** attempt to define:
 
 **Important relationships:** AI artifacts belong to an organization, may be attached directly to candidate reviews, interviews, or hiring decisions, and must remain auditable and reviewable.
 
+---
+
 ### 6.4 Relationships summary
 
 | Source entity | Relationship | Target entity | Cardinality | Business meaning |
@@ -2092,6 +2098,8 @@ The model does **not** attempt to define:
 | Notification | may target | Candidate | M:1 | Candidate-facing communication |
 | OperationalAlert | may be owned by | User | M:1 | Responsible follow-up owner |
 | AIArtifact | may be reviewed by | User | M:1 | Human review of AI output |
+
+---
 
 ### 6.5 Mermaid ER diagram
 
@@ -2478,6 +2486,8 @@ erDiagram
     USER ||--o{ AI_ARTIFACT : reviews
 ```
 
+---
+
 ### 6.6 Modeling notes and validation
 
 This model is sufficient for the MVP-aligned section 5 because it supports all six use cases directly:
@@ -2522,6 +2532,8 @@ The design is deliberately **hybrid** in behavior:
 - **asynchronous internal event processing** for reminders, escalations, notifications, AI generation, alert creation, handoff triggers, and read-model projection updates
 
 That matches the requirements for dependable workflow actions, auditable workflow events, trustworthy operational analytics, configurable automation, and reviewable AI assistance.
+
+---
 
 ### 7.2 Major system building blocks
 
@@ -2584,6 +2596,8 @@ The MVP should integrate with:
 - **downstream HRIS / onboarding tool / email package** for shallow handoff
 
 These integrations are important but should not be hard prerequisites for completing the core in-product workflow where avoidable.
+
+---
 
 ### 7.3 Responsibilities and interaction patterns
 
@@ -2648,6 +2662,8 @@ AI in v1 should remain a bounded assistive layer:
 
 Every generated output should be persisted as `AIArtifact` with traceability (`input_reference_json`), generator metadata, and human review state. AI output may inform a review, interview, decision, or draft notification, but it must never directly mutate workflow state without an explicit user action.
 
+---
+
 ### 7.4 Authentication, authorization, security, and observability
 
 **Authentication and authorization**  
@@ -2679,6 +2695,8 @@ Use three layers of observability:
 
 Every sync request and every async event should carry a correlation ID so that a requisition, application, interview loop, offer, or handoff can be traced across API, DB, queue, worker, and external integration logs. This is particularly important because the ops dashboard must remain reconcilable to the underlying workflow state.
 
+---
+
 ### 7.5 Deployment/runtime implications
 
 For v1, the runtime shape should be:
@@ -2693,6 +2711,8 @@ For v1, the runtime shape should be:
 - **1 durable internal queue/broker**
 
 This lets you scale API traffic, automation volume, and AI/parsing load independently without splitting the domain into microservices too early.
+
+---
 
 ### 7.6 Mermaid high-level architecture diagram
 
@@ -2778,6 +2798,7 @@ flowchart LR
 
 Solid arrows represent synchronous command/query paths. Dashed arrows represent asynchronous event-driven processing.
 
+---
 
 ## 8. Focused C4 diagram
 
@@ -2793,6 +2814,8 @@ The most relevant area to document in depth is the **Async Worker Runtime**. Tha
 - onboarding handoff triggers
 
 This is also the place where LTI keeps one transactional core **without** introducing a separate workflow engine or analytics mart, which is exactly how sections 4–6 frame the MVP.
+
+---
 
 ### 8.2 C4 component-level view — Async Worker Runtime
 
@@ -2852,6 +2875,8 @@ Rel(failure, db, "Persists retry / dead-letter state")
 UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
 
+---
+
 ### 8.3 Interpretation of the C4 view
 
 This component view shows the main engineering intent of the approved architecture:
@@ -2861,3 +2886,13 @@ This component view shows the main engineering intent of the approved architectu
 - **Workspace Projection Updater** and **Ops Projection & Alert Updater** keep the manager workspace and recruiting ops dashboard as **derived read models**, not as separate systems of record.
 - **AIArtifact Processor** preserves the governance requirements by storing traceable, reviewable AI outputs instead of letting model responses directly mutate hiring outcomes.
 - **Calendar Adapter** and **Handoff Adapter** keep external side effects outside the synchronous transaction, while still making their status visible in-product.
+
+---
+
+## References
+[^aptitude]: Aptitude Research, *Beyond Tracking: The Evolution of the ATS in an Intelligent and Agentic Era* (2025). Key findings surfaced on the report page: [Aptitude Research report page](https://www.aptituderesearch.com/research_report/beyond-tracking-the-evolution-of-the-ats-in-an-intelligent-and-agentic-era/)
+[^greenhouse]: Greenhouse, *Interviewing & decision making* and structured hiring resources: [Interviewing & decision making](https://www.greenhouse.com/interviewing-decision-making) and [Structured hiring introduction](https://support.greenhouse.io/hc/en-us/articles/360007245452-Structured-hiring-Introduction)
+[^ashby]: Ashby, *Powerful Analytics and Reporting*: [Ashby recruiting analytics](https://www.ashbyhq.com/platform/recruiting/analytics)
+[^workable]: Workable Help Center, *Setting up automated actions*: [Workable automated actions](https://help.workable.com/hc/en-us/articles/1500007691921-Setting-up-automated-actions)
+[^linkedin]: LinkedIn, *LinkedIn Research: Talent 2026*: [LinkedIn Talent 2026](https://news.linkedin.com/en-us/2026/LinkedIn-Research-Talent-2026)
+[^ai-act]: European Commission, *Navigating the AI Act*; recruitment/employment AI is part of the high-risk system framework: [Navigating the AI Act](https://digital-strategy.ec.europa.eu/en/faqs/navigating-ai-act)
