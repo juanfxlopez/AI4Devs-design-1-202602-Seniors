@@ -2543,9 +2543,9 @@ At the same time, the MVP includes enough asynchronous behavior that a purely sy
 
 This option was chosen over a simpler **layered modular monolith** because LTI depends too heavily on auditable automation, derived task views, and near-real-time operational projections. It was chosen over a **pure hexagonal modular monolith without stronger internal eventing** because the MVP’s workflow automation and operational visibility requirements are too central to leave as secondary job logic. It was chosen over a **coarse-grained service architecture** because the product still benefits more from one consistent operational model than from independent service deployments. In short, the selected architecture optimizes for **speed of delivery, transactional clarity, maintainability, async extensibility, and future evolution without premature distribution**.
 
-### 7.1.2 Stage-1 decision record and approved architectural defaults
+### 7.1.2 Architectural defaults and constraints
 
-The following architectural defaults were selected during stage 1 and are intentionally preserved here so the reasoning behind the architecture is not lost:
+The following architectural defaults are intentionally preserved here so that the reasoning behind the architecture is explicit within the document itself:
 
 1. **Separate candidate-facing web app, shared backend core**  
    The candidate experience and the internal ATS serve different users, security postures, and traffic patterns, so they should remain separate web surfaces. However, both should use the same transactional ATS core in v1 to avoid splitting the workflow model too early.
@@ -2842,12 +2842,12 @@ Solid arrows represent synchronous command/query paths. Dashed arrows represent 
 
 ### 8.1 Section purpose and scope
 
-This section extends the component-level C4 documentation of LTI using the same style, notation family, and level of abstraction applied in the original focused view for the **Async Worker Runtime**. The goal is to document the remaining major architectural areas that materially benefit from a component-level decomposition while staying fully consistent with:
+This section provides the component-level C4 documentation for the major LTI architectural areas using one consistent style, notation family, and level of abstraction. The goal is to document the major architectural areas that materially benefit from a component-level decomposition while staying fully consistent with:
 - the MVP scope and boundaries defined in section 4,
 - the workflow and data boundaries defined in sections 5 and 6,
 - and the approved high-level architecture in section 7.
 
-The component-level views in this section therefore cover the following major areas:
+The component-level views in this section cover the following major areas:
 1. **Async Worker Runtime**
 2. **ATS Core Backend**
 3. **Internal ATS Web App**
