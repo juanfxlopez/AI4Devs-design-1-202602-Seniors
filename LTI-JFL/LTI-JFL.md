@@ -2838,24 +2838,66 @@ Solid arrows represent synchronous command/query paths. Dashed arrows represent 
 
 ---
 
-## 8. Focused C4 diagram
+## 8. Component-level C4 views
 
-### 8.1 Chosen area and why it is the right one
+### 8.1 Section purpose and scope
 
-The most relevant area to document in depth is the **Async Worker Runtime**. That is where the approved architecture actually differentiates itself from a simpler modular monolith. It is the layer that turns authoritative workflow state into:
-- the derived **hiring-manager workspace**
-- the derived **recruiting ops dashboard**
-- reminders, escalations, and communications
-- `OperationalAlert` lifecycle
-- `AIArtifact` generation
-- calendar side effects
-- onboarding handoff triggers
+This section extends the component-level C4 documentation of LTI using the same style, notation family, and level of abstraction applied in the original focused view for the **Async Worker Runtime**. The goal is to document the remaining major architectural areas that materially benefit from a component-level decomposition while staying fully consistent with:
+- the MVP scope and boundaries defined in section 4,
+- the workflow and data boundaries defined in sections 5 and 6,
+- and the approved high-level architecture in section 7.
 
-This is also the place where LTI keeps one transactional core **without** introducing a separate workflow engine or analytics mart, which is exactly how sections 4–6 frame the MVP. The ATS Core Backend remains the authoritative transactional system, but the Async Worker Runtime is the best zoom-in because it shows how automation, derived views, AI processing, and integrations are added without fragmenting the transactional core.
+The component-level views in this section therefore cover the following major areas:
+1. **Async Worker Runtime**
+2. **ATS Core Backend**
+3. **Internal ATS Web App**
+4. **Candidate Application Web App**
+
+The section intentionally does **not** create separate component-level diagrams for the shared data layer, the durable internal messaging layer, or external systems such as SSO, calendar, email, AI/parsing, and downstream HRIS. Those remain neighboring stores or dependencies rather than LTI-owned application containers with internal structure worth decomposing further at this stage.
 
 ---
 
-### 8.2 C4 component-level view — Async Worker Runtime
+### 8.2 Area 1 — Async Worker Runtime
+
+#### 8.2.1 Scope of this C4 view
+
+This view covers the **Async Worker Runtime** container only. It zooms into the runtime that consumes internal domain events and executes asynchronous side effects, derived-view updates, bounded automation, AI processing, and integration-triggered work. Outside scope are the internal component structure of the ATS Core Backend, the user-facing web applications, and the internal implementation of infrastructure services such as PostgreSQL, object storage, and external providers.
+
+In the overall LTI system, this area is where the architecture differentiates itself from a simpler modular monolith. It is the layer that turns authoritative workflow state into derived workspace and operational views, reminders and escalations, communication dispatch, AIArtifact generation, calendar side effects, and onboarding handoff triggers without fragmenting the transactional core.
+
+#### 8.2.2 Main components
+
+- **Event Intake**  
+  Consumes queued domain events and enforces idempotency before downstream processing begins. It exists as a separate component because at-least-once delivery safety must be handled consistently across all worker flows.
+
+- **Event Router**  
+  Routes normalized events to the correct handlers. It exists separately so routing logic stays distinct from business reactions.
+
+- **WorkflowAutomationRule Evaluator**  
+  Evaluates reminders, escalations, communications, approval routing, and handoff triggers. It exists separately because workflow automation is a first-class but deliberately bounded capability in the MVP.
+
+- **Workspace Projection Updater**  
+  Builds recruiter and hiring-manager task views from workflow events. It exists separately because the manager workspace is a derived operational view, not a source-of-truth subsystem.
+
+- **Ops Projection & Alert Updater**  
+  Updates recruiting ops projections and `OperationalAlert`. It exists separately because the ops dashboard is derived from current workflow state and alert persistence.
+
+- **Notification Dispatcher**  
+  Creates `Notification` records and sends messages through external delivery providers. It exists separately because delivery orchestration and retry behavior should not live inside rule evaluation or projection logic.
+
+- **AIArtifact Processor**  
+  Generates reviewable `AIArtifact` outputs for parsing and assistive generation. It exists separately because AI generation is asynchronous and must preserve traceability and review state.
+
+- **Calendar Adapter**  
+  Synchronizes interview scheduling state with external calendar services. It exists separately because external side effects should remain outside the synchronous transaction path.
+
+- **Handoff Adapter**  
+  Creates the onboarding handoff package and pushes it to the downstream destination. It exists separately because onboarding handoff is in scope, but downstream HRIS execution is intentionally shallow.
+
+- **Retry / Failure Handler**  
+  Retries transient failures and records terminal failures. It exists separately because reliability is a core architectural concern for async processing.
+
+#### 8.2.3 C4 component-level view — Async Worker Runtime
 
 ```mermaid
 C4Component
@@ -2915,20 +2957,364 @@ UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 
 **Portability note:** This diagram uses Mermaid C4 syntax. Depending on the rendering tool or documentation pipeline, a fallback rendered image or simplified Mermaid flowchart may be needed for publishing.
 
----
-
-### 8.3 Interpretation of the C4 view
+#### 8.2.4 Interpretation
 
 This component view shows the main engineering intent of the approved architecture:
 
 - **Event Intake + Retry / Failure Handler** make async processing safe under at-least-once delivery.
 - **WorkflowAutomationRule Evaluator** stays bounded to the documented trigger/action model instead of becoming a general workflow platform.
 - **Workspace Projection Updater** and **Ops Projection & Alert Updater** keep the manager workspace and recruiting ops dashboard as **derived read models**, not as separate systems of record.
-- **AIArtifact Processor** preserves the governance requirements by storing traceable, reviewable AI outputs instead of letting model responses directly mutate hiring outcomes.
+- **AIArtifact Processor** preserves governance requirements by storing traceable, reviewable AI outputs instead of letting model responses directly mutate hiring outcomes.
 - **Calendar Adapter** and **Handoff Adapter** keep external side effects outside the synchronous transaction, while still making their status visible in-product.
+
+This area is also where the architecture’s hybrid nature becomes visible. LTI does not treat the event layer as the source of truth. Instead, the async runtime exists to react to already-committed workflow state, which keeps the product aligned with one authoritative transactional core while still supporting automation, operational visibility, and bounded AI processing.
 
 ---
 
+### 8.3 Area 2 — ATS Core Backend
+
+#### 8.3.1 Scope of this C4 view
+
+This view covers the **ATS Core Backend** container only. It zooms into the internal structure of the hexagonal modular monolith that owns authoritative workflow state and exposes the APIs used by both web applications. Outside scope are the internal composition of the Async Worker Runtime, detailed infrastructure internals of PostgreSQL/object storage/messaging, and the internal implementation of external systems.
+
+In the overall LTI system, this container is the transactional core that executes workflow commands, persists state, records audit context, and publishes internal domain events.
+
+#### 8.3.2 Main components
+
+- **Internal ATS API Adapter**  
+  Serves authenticated internal commands and queries for recruiters, hiring managers, interviewers, coordinators, and talent leaders. It exists separately to isolate internal delivery concerns from domain logic.
+
+- **Candidate API Adapter**  
+  Serves public or token-based candidate flows such as posting reads, save/resume, upload orchestration, and application submission. It exists separately because candidate-facing interaction patterns and trust-boundary concerns differ from internal flows.
+
+- **Integration / Webhook API Adapter**  
+  Receives inbound integration callbacks and webhook requests relevant to the workflow core. It exists separately because integration-specific contracts should not leak into internal or candidate APIs.
+
+- **Identity & Authorization Component**  
+  Resolves tenant context, validates sessions, and performs workflow-scoped access checks. It exists separately because access control is cross-cutting and shaped by both tenant and assignment context.
+
+- **Requisition & Hiring Plan Management Component**  
+  Owns requisitions, approvals, hiring plans, stages, criteria, kits, and team setup. It exists separately because it defines the upstream planning boundary for the rest of the hiring workflow.
+
+- **Candidate Intake & Profile Generation Component**  
+  Owns candidate intake, documents, applications, and application responses. It exists separately because candidate ingestion has distinct workflow and data-handling concerns.
+
+- **Candidate Review & Signal Extraction Component**  
+  Owns recruiter and hiring-manager reviews and their linkage to AI-assisted evidence. It exists separately because it is the primary recruiter–manager collaboration boundary.
+
+- **Interview Coordination & Structured Feedback Component**  
+  Owns interviews, participants, scheduling state, feedback, and debrief inputs. It exists separately because interview-loop execution is a distinct workflow boundary.
+
+- **Hiring Decision Component**  
+  Owns final decisions, decision participants, and criterion-level assessments. It exists separately because decision capture is its own governance boundary.
+
+- **Offer & Onboarding Handoff Component**  
+  Owns offers, approvals, candidate response state, handoff, and checklist items. It exists separately because end-of-funnel workflows are first-class MVP scope.
+
+- **Workflow Support Component**  
+  Owns automation-rule configuration plus the backend-side state of `Notification` and `OperationalAlert` records. It exists separately because workflow support is first-class but intentionally bounded.
+
+- **AIArtifact Registry Component**  
+  Stores and exposes reviewable `AIArtifact` records with traceability. It exists separately because generation is async, but artifact governance belongs in the core.
+
+- **Workspace & Ops Query Component**  
+  Serves the hiring-manager workspace, recruiter task views, recruiting ops dashboard, and operational ATS search. It exists separately because derived reads should remain distinct from transactional command handling.
+
+- **Audit & Compliance Component**  
+  Writes audit records and retention/governance metadata for sensitive actions. It exists separately because governance cuts across approvals, reviews, decisions, offers, handoffs, and AI review actions.
+
+- **Domain Event Outbox**  
+  Persists domain events atomically with business transactions and exposes them to the durable internal messaging layer. It exists separately because it is the reliability boundary between synchronous state changes and async processing.
+
+#### 8.3.3 C4 component-level view — ATS Core Backend
+
+```mermaid
+C4Component
+title Component view — ATS Core Backend
+
+Container_Ext(intWeb, "Internal ATS Web App", "Web application", "Authenticated experience for internal users")
+Container_Ext(candWeb, "Candidate Application Web App", "Web application", "Public candidate experience")
+Container_Ext(workers, "Async Worker Runtime", "Background workers", "Consumes internal domain events and executes async side effects")
+ContainerDb_Ext(db, "PostgreSQL", "Database", "Transactional state, projections, audit, and outbox")
+Container_Ext(store, "Object Storage", "Blob storage", "Candidate documents and attachments")
+ContainerQueue_Ext(queue, "Durable Internal Messaging Layer", "Queue/Broker", "Receives committed domain events")
+System_Ext(idp, "SSO / IdP", "Internal-user authentication")
+
+Container_Boundary(core, "ATS Core Backend") {
+  Component(internalApi, "Internal ATS API Adapter", "REST/JSON adapter", "Serves authenticated internal commands and queries")
+  Component(candidateApi, "Candidate API Adapter", "REST/JSON adapter", "Serves public or token-based candidate flows")
+  Component(integrationApi, "Integration / Webhook API Adapter", "Webhook adapter", "Receives inbound integration callbacks and webhook requests")
+  Component(authz, "Identity & Authorization Component", "Policy component", "Tenant resolution, session validation, and workflow-scoped access checks")
+  Component(requisition, "Requisition & Hiring Plan Management Component", "Domain/application component", "Owns requisitions, approvals, plans, stages, criteria, kits, and team setup")
+  Component(intake, "Candidate Intake & Profile Generation Component", "Domain/application component", "Owns candidate intake, documents, applications, and application responses")
+  Component(review, "Candidate Review & Signal Extraction Component", "Domain/application component", "Owns recruiter and hiring-manager reviews and role-linked evidence views")
+  Component(interview, "Interview Coordination & Structured Feedback Component", "Domain/application component", "Owns interviews, participants, feedback, and debrief inputs")
+  Component(decision, "Hiring Decision Component", "Domain/application component", "Owns final decisions, decision participants, and criterion assessments")
+  Component(offer, "Offer & Onboarding Handoff Component", "Domain/application component", "Owns offers, approvals, candidate response state, handoff, and checklist items")
+  Component(workflowSupport, "Workflow Support Component", "Domain/application component", "Owns automation-rule configuration plus notification and alert records")
+  Component(aiRegistry, "AIArtifact Registry Component", "Domain/application component", "Stores and exposes reviewable AIArtifact records with traceability")
+  Component(query, "Workspace & Ops Query Component", "Query component", "Serves workspace, dashboard, and operational ATS search reads")
+  Component(audit, "Audit & Compliance Component", "Cross-cutting component", "Writes audit records and retention/governance metadata")
+  Component(outbox, "Domain Event Outbox", "Outbox component", "Persists committed domain events for async processing")
+}
+
+Rel(intWeb, internalApi, "Calls")
+Rel(candWeb, candidateApi, "Calls")
+Rel(internalApi, authz, "Authorizes via")
+Rel(candidateApi, authz, "Authorizes via")
+Rel(integrationApi, authz, "Validates integration or callback context via")
+Rel(authz, idp, "Validates internal identity with")
+Rel(authz, db, "Reads tenant/user/assignment context from")
+
+Rel(internalApi, requisition, "Sends commands / queries to")
+Rel(internalApi, review, "Sends commands / queries to")
+Rel(internalApi, interview, "Sends commands / queries to")
+Rel(internalApi, decision, "Sends commands / queries to")
+Rel(internalApi, offer, "Sends commands / queries to")
+Rel(internalApi, workflowSupport, "Configures / reads")
+Rel(internalApi, query, "Reads workspace / dashboard via")
+Rel(candidateApi, intake, "Sends commands to")
+Rel(candidateApi, query, "Reads posting or application state via")
+Rel(integrationApi, offer, "Updates handoff-related inbound state via")
+Rel(integrationApi, workflowSupport, "Updates integration-facing workflow state via")
+
+Rel(review, aiRegistry, "Reads / links AIArtifact through")
+Rel(interview, aiRegistry, "Reads / links AIArtifact through")
+Rel(decision, aiRegistry, "Reads / links AIArtifact through")
+Rel(workflowSupport, aiRegistry, "Reads reviewed AI drafts from")
+
+Rel(requisition, audit, "Writes sensitive action audit via")
+Rel(intake, audit, "Writes sensitive action audit via")
+Rel(review, audit, "Writes sensitive action audit via")
+Rel(interview, audit, "Writes sensitive action audit via")
+Rel(decision, audit, "Writes sensitive action audit via")
+Rel(offer, audit, "Writes sensitive action audit via")
+Rel(workflowSupport, audit, "Writes rule / alert audit via")
+
+Rel(requisition, db, "Reads / writes")
+Rel(intake, db, "Reads / writes")
+Rel(review, db, "Reads / writes")
+Rel(interview, db, "Reads / writes")
+Rel(decision, db, "Reads / writes")
+Rel(offer, db, "Reads / writes")
+Rel(workflowSupport, db, "Reads / writes")
+Rel(aiRegistry, db, "Reads / writes")
+Rel(query, db, "Reads projections and operational data from")
+Rel(audit, db, "Persists audit metadata in")
+Rel(intake, store, "Stores candidate files in")
+
+Rel(requisition, outbox, "Emits domain events to")
+Rel(intake, outbox, "Emits domain events to")
+Rel(review, outbox, "Emits domain events to")
+Rel(interview, outbox, "Emits domain events to")
+Rel(decision, outbox, "Emits domain events to")
+Rel(offer, outbox, "Emits domain events to")
+Rel(workflowSupport, outbox, "Emits workflow-support events to")
+Rel(outbox, queue, "Publishes committed events to")
+Rel(queue, workers, "Delivers events to")
+
+UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+#### 8.3.4 Interpretation
+
+The ATS Core Backend is the architectural center of gravity for LTI. Its boundaries follow the workflow backbone already established in sections 5 and 6: requisition and planning, candidate intake, review, interview, decision, offer, and onboarding handoff. These are complemented by bounded supporting components for workflow support, AI artifact governance, query serving, audit, and event publication.
+
+This decomposition makes the hexagonal style concrete. API adapters are kept separate from domain/application components, and domain/application components remain separate from infrastructure dependencies such as PostgreSQL, object storage, SSO, and the durable internal messaging layer. The **Domain Event Outbox** is especially important because it shows how the backend preserves a single transactional source of truth while still enabling async workers to handle projections, automation, communications, AI processing, and external side effects.
+
+The chosen boundaries also preserve the document’s core modeling decisions. Workspace and dashboard reads are served through a dedicated query component rather than being treated as separate systems of record, AI artifacts remain reviewable records rather than autonomous decisions, and workflow support remains bounded around rules, notifications, and alerts instead of expanding into a general workflow engine.
+
+---
+
+### 8.4 Area 3 — Internal ATS Web App
+
+#### 8.4.1 Scope of this C4 view
+
+This view covers the **Internal ATS Web App** container only. It zooms into the client-side composition of the authenticated internal experience used by recruiters, hiring managers, interviewers, coordinators, and talent leaders. Outside scope are the detailed internals of the ATS Core Backend, the Async Worker Runtime, the public candidate-facing app, and the internals of SSO/infrastructure services.
+
+In the overall LTI system, this container is the primary internal interaction surface for planning, candidate collaboration, interviewing, decisions, offers, handoff tracking, and operational visibility.
+
+#### 8.4.2 Main components
+
+- **App Shell & Session Context**  
+  Bootstraps the authenticated application, tenant context, layout, navigation frame, and top-level session state. It exists separately because every internal feature depends on consistent session and tenant context.
+
+- **Authorization & Navigation Guard**  
+  Controls visible navigation and protected routes based on role, assignment, and workflow context. It exists separately because UI-level access shaping is essential in a tenant-scoped and assignment-scoped system.
+
+- **Requisition & Planning Workspace**  
+  Covers requisitions, approvals, hiring plans, scorecards, kits, team setup, and publication readiness. It exists separately because it is the upstream planning boundary for structured hiring.
+
+- **Hiring Workspace**  
+  Covers recruiter triage, hiring-manager collaboration, candidate evidence viewing, pending reviews, and stage actions. It exists separately because it is the main product-differentiation surface for recruiter–manager collaboration.
+
+- **Interview & Debrief Workspace**  
+  Covers interview-loop planning, feedback submission/review, debrief preparation, and final decision capture. It exists separately because interview-loop execution has its own interaction model.
+
+- **Offer & Handoff Workspace**  
+  Covers offer drafting, offer approvals, candidate response handling, handoff tracking, and checklist monitoring. It exists separately because end-of-funnel workflows differ materially from earlier hiring stages.
+
+- **Recruiting Ops Dashboard**  
+  Covers current operational metrics, alerts, drill-downs, and corrective-action entry points. It exists separately because it is a projection-driven, read-heavy surface backed by derived data.
+
+- **Automation & Configuration Workspace**  
+  Covers configuration and monitoring of `WorkflowAutomationRule` and related operational controls. It exists separately because bounded workflow automation is a first-class product and architectural concern.
+
+- **API / State Access Layer**  
+  Centralizes HTTP access, query caching, and client-side state normalization. It exists separately because feature workspaces should not duplicate transport and state-access logic.
+
+#### 8.4.3 C4 component-level view — Internal ATS Web App
+
+```mermaid
+C4Component
+title Component view — Internal ATS Web App
+
+Person_Ext(user, "Internal User", "Recruiter, hiring manager, interviewer, coordinator, or talent leader")
+Container_Ext(core, "ATS Core Backend", "Hexagonal modular monolith", "Serves internal commands and queries")
+System_Ext(idp, "SSO / IdP", "Authenticates internal users")
+
+Container_Boundary(web, "Internal ATS Web App") {
+  Component(shell, "App Shell & Session Context", "Browser SPA shell", "Bootstraps authenticated session, tenant context, layout, and routing frame")
+  Component(guard, "Authorization & Navigation Guard", "Client policy component", "Controls protected routes and visible navigation")
+  Component(reqUI, "Requisition & Planning Workspace", "Feature module", "Requisition creation, approvals, plans, scorecards, kits, and publication readiness")
+  Component(hiringUI, "Hiring Workspace", "Feature module", "Recruiter triage, hiring-manager collaboration, candidate evidence, and stage actions")
+  Component(interviewUI, "Interview & Debrief Workspace", "Feature module", "Interview planning, feedback workflows, debrief, and decision capture")
+  Component(offerUI, "Offer & Handoff Workspace", "Feature module", "Offer workflow, approvals, candidate response handling, and handoff tracking")
+  Component(opsUI, "Recruiting Ops Dashboard", "Feature module", "Operational metrics, alerts, drill-downs, and corrective-action entry points")
+  Component(autoUI, "Automation & Configuration Workspace", "Feature module", "WorkflowAutomationRule configuration and operational controls")
+  Component(apiClient, "API / State Access Layer", "HTTP client + query cache", "Calls Internal ATS API and manages client-side query state")
+}
+
+Rel(user, shell, "Uses")
+Rel(shell, idp, "Authenticates with")
+Rel(shell, guard, "Initializes")
+Rel(shell, reqUI, "Hosts route for")
+Rel(shell, hiringUI, "Hosts route for")
+Rel(shell, interviewUI, "Hosts route for")
+Rel(shell, offerUI, "Hosts route for")
+Rel(shell, opsUI, "Hosts route for")
+Rel(shell, autoUI, "Hosts route for")
+
+Rel(guard, reqUI, "Controls access to")
+Rel(guard, hiringUI, "Controls access to")
+Rel(guard, interviewUI, "Controls access to")
+Rel(guard, offerUI, "Controls access to")
+Rel(guard, opsUI, "Controls access to")
+Rel(guard, autoUI, "Controls access to")
+Rel(guard, apiClient, "Reads user / assignment context via")
+
+Rel(reqUI, apiClient, "Sends commands / queries via")
+Rel(hiringUI, apiClient, "Sends commands / queries via")
+Rel(interviewUI, apiClient, "Sends commands / queries via")
+Rel(offerUI, apiClient, "Sends commands / queries via")
+Rel(opsUI, apiClient, "Reads projections / alerts via")
+Rel(autoUI, apiClient, "Configures rules / reads state via")
+Rel(apiClient, core, "Calls Internal ATS API")
+
+UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+#### 8.4.4 Interpretation
+
+The Internal ATS Web App is architecturally important because it expresses the product’s internal operating model, not just a collection of screens. Its boundaries follow the main internal working modes already defined in the product and architecture sections: planning, candidate collaboration, interviewing and debrief, offer and handoff, operations, and automation configuration.
+
+This decomposition also makes the internal UX constraints visible. The **App Shell & Session Context** and **Authorization & Navigation Guard** exist because internal users are not interchangeable: their access depends on tenant context, `user_type`, and requisition/task-specific assignment. The **Recruiting Ops Dashboard** is kept separate because it is a projection-driven, read-heavy surface, while the workspaces are more command-heavy workflow surfaces.
+
+These boundaries reflect both product and architectural intent: a task-oriented internal ATS built on a shared API/state layer, with differentiated feature workspaces that map cleanly to the backend’s bounded workflow areas without embedding business logic directly in the UI.
+
+---
+
+### 8.5 Area 4 — Candidate Application Web App
+
+#### 8.5.1 Scope of this C4 view
+
+This view covers the **Candidate Application Web App** container only. It zooms into the public-facing application experience used by candidates to discover jobs, upload resumes, confirm extracted information, complete role-specific questions, save/resume, and submit applications. Outside scope are the internal ATS web app, the internals of the ATS Core Backend, the Async Worker Runtime, and the internal implementation of object storage or external communication systems.
+
+In the overall LTI system, this container is the public intake surface and must remain low-friction, secure, and resilient while still relying on the shared backend core for authoritative state.
+
+#### 8.5.2 Main components
+
+- **Job Posting & Application Entry Component**  
+  Renders published job content and starts application sessions. It exists separately because public job discovery and application entry are distinct from the in-progress application flow.
+
+- **Application Session Manager**  
+  Manages save/resume tokens, in-progress routing, progress state, and recovery of unfinished applications. It exists separately because save/resume is an explicit MVP requirement.
+
+- **Document Upload Component**  
+  Uploads CVs and attachments, requests upload instructions, and associates files with the in-progress application. It exists separately because file handling has distinct security, performance, and failure characteristics.
+
+- **Extraction Confirmation Component**  
+  Shows extracted candidate fields and lets the candidate confirm or edit them. It exists separately because extract-first / confirm-second is a core differentiator in the intake flow.
+
+- **Role-Specific Application Form Component**  
+  Captures posting-specific questions and related validation/consent state. It exists separately because role-adaptive questions are a separate concern from CV extraction.
+
+- **Submission & Acknowledgement Component**  
+  Performs final review, submission, and confirmation rendering. It exists separately because final submission is where candidate state becomes authoritative in the backend.
+
+- **Candidate API Client**  
+  Centralizes calls to the Candidate API, retrieves posting data, persists in-progress state, coordinates upload metadata, and submits final payloads. It exists separately because feature modules should not duplicate transport and error-handling logic.
+
+#### 8.5.3 C4 component-level view — Candidate Application Web App
+
+```mermaid
+C4Component
+title Component view — Candidate Application Web App
+
+Person_Ext(candidate, "Candidate", "Public applicant")
+Container_Ext(core, "ATS Core Backend", "Hexagonal modular monolith", "Serves job-posting reads and candidate-intake APIs")
+Container_Ext(store, "Object Storage", "Blob storage", "Stores uploaded CVs and attachments")
+
+Container_Boundary(web, "Candidate Application Web App") {
+  Component(postingUI, "Job Posting & Application Entry Component", "Feature module", "Renders published job content and starts the application flow")
+  Component(session, "Application Session Manager", "Client workflow component", "Owns save/resume tokens, progress, and route continuity")
+  Component(upload, "Document Upload Component", "Client upload component", "Uploads CVs and attachments and links them to the in-progress application")
+  Component(confirm, "Extraction Confirmation Component", "Feature module", "Shows extracted fields for confirmation or editing")
+  Component(form, "Role-Specific Application Form Component", "Feature module", "Captures application questions, validation, and related consent state")
+  Component(submit, "Submission & Acknowledgement Component", "Feature module", "Final review, submission, and confirmation rendering")
+  Component(apiClient, "Candidate API Client", "HTTP client + client state", "Calls Candidate API and manages candidate-flow state")
+}
+
+Rel(candidate, postingUI, "Uses")
+Rel(postingUI, apiClient, "Loads posting data via")
+Rel(postingUI, session, "Starts application in")
+Rel(session, upload, "Maintains progress for")
+Rel(session, confirm, "Maintains progress for")
+Rel(session, form, "Maintains progress for")
+Rel(session, submit, "Maintains progress for")
+Rel(upload, apiClient, "Requests upload/session instructions via")
+Rel(upload, store, "Uploads files to", "Recommended signed-upload path")
+Rel(confirm, apiClient, "Reads extraction results / saves edits via")
+Rel(form, apiClient, "Loads questions / saves responses via")
+Rel(submit, apiClient, "Submits final application via")
+Rel(apiClient, core, "Calls Candidate API")
+
+UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+#### 8.5.4 Interpretation
+
+The Candidate Application Web App deserves its own component view because it is not just a thinner copy of the internal ATS. It has a different user type, a different trust boundary, and a different workflow shape: public posting discovery, file upload, extraction confirmation, role-specific questions, save/resume, and final submission.
+
+Its component boundaries are designed to keep the public application flow low-friction and resilient without duplicating core business logic. The **Candidate API Client** and **Application Session Manager** organize the browser experience around a guided application session. The **Document Upload Component** is separated because file upload has different performance and failure characteristics, and because the architecture recommends direct signed upload to object storage while keeping the backend as the authoritative source of application state.
+
+This decomposition also reinforces the MVP boundary. The candidate app supports job discovery and application submission, but it does not attempt to become a broader candidate portal or CRM-like experience. It stays focused on the signal-rich, low-friction intake pattern already defined in sections 4–7.
+
+---
+
+### 8.6 Cross-area consistency notes
+
+These component views stay aligned with sections 6 and 7 in four important ways:
+- they preserve the same approved containers,
+- they keep authoritative workflow state in the **ATS Core Backend**,
+- they keep the **Async Worker Runtime** as the place where automation, projections, AI processing, and external side effects are executed,
+- and they preserve the data-model choices around derived workspace/dashboard views, bounded workflow automation, shallow external-system modeling, and assistive `AIArtifact` governance.
+
+The assumptions made here are structural rather than scope-changing. The two web applications are decomposed into architectural feature modules rather than low-level UI widgets, and the ATS Core Backend is decomposed according to the workflow and support boundaries already present in section 7. No new major containers, services, or product scope were introduced.
+
+Areas that may deserve deeper documentation later are security and authorization flows if enterprise control requirements expand, a deeper deployment/runtime view if stronger tenant isolation becomes necessary, and a more detailed integration view if calendar, HRIS, or messaging depth expands materially. The shared data layer, durable internal messaging layer, and external systems should remain undocumented at component level for now, because at this stage they are better treated as neighboring infrastructure dependencies than as LTI-owned application areas.
+
+---
 ## References
 [^aptitude]: Aptitude Research, *Beyond Tracking: The Evolution of the ATS in an Intelligent and Agentic Era* (2025). Key findings surfaced on the report page: [Aptitude Research report page](https://www.aptituderesearch.com/research_report/beyond-tracking-the-evolution-of-the-ats-in-an-intelligent-and-agentic-era/)
 [^greenhouse]: Greenhouse, *Interviewing & decision making* and structured hiring resources: [Interviewing & decision making](https://www.greenhouse.com/interviewing-decision-making) and [Structured hiring introduction](https://support.greenhouse.io/hc/en-us/articles/360007245452-Structured-hiring-Introduction)
