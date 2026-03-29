@@ -1,6 +1,5 @@
-# Prompt 1
+# Prompt P-1
 
----
 
 You are a senior Product Strategy, B2B SaaS, and HR Tech expert with deep expertise in Applicant Tracking Systems (ATS).
 
@@ -325,11 +324,41 @@ If you want to start Phase 2, reply with:
 
 ---
 
-# Prompt 2
+## Follow-up prompts
+
+### FP-1.1
+I'm looking to define these key functionalities that will make LTI to shine above the competitors, such as increase the efficiency for the HR departments, enhance the real time collaboration between recruiters and managers, automations, AI assistance in diverse tasks. This is the moment of brainstorming, research which are the keys for success and let it know to the team. So i want to understand more in detail the options that you are presenting.
+
+### FP-1.2
+something I have experienced myself as a candidate is that candidates sometimes expend so much time preparing a role submission. these could because sometimes when uploading the CV in pdf or other format, there is an additional form to submit the same information including experience, education and skills that is already mentioned in the CV. Sometimes the ATS is capable enough to auto populate the form but sometimes the candidate needs to do it manually which could end-up sometimes in abandon the application due to not want to complicate himself or just laziness. Some could argue these is done in purpose so only the candidates that are very interested applies and the systems does end up with thousands of applications which is the case with easy-apply functions like in LinkedIn where only with the CV pdf and very few questions the application is submitted. Other pain point for candidates is to write a cover letter customized for each job application, which is good to be done but very frequently it end up with an AI generated cover letter that is very similar to the others applicants. These make the selection of the candidate very difficult as most cover letters are similar, so there should be a way in which the ATS can extract the correct information from the CV and cover letter that is essential to the recruiter or manager. it is very unlikely that the cover letters are read manually especially when more than 100 applicants exist for a job description. Probably later when less candidates are left, these are read but a system that can remove the common artifacts form the cv and cover letter and present it to the customer could be useful. I just want to brainstorm with you about these and the other topics you mentioned worthen to be brainstormed.
+
+### FP-1.3
+There is also the candidate frustration for not receiving any real feedback but only an automated email saying that they don't want to continue with him because of there are candidates more suited. As a candidate I would like a a real feedback even if its form the ATS AI so i know what to improve in my application to the next job. I am not sure if there is some ethics or policies around giving this feedback but I know you mentioned this is an AI use to treat carefully included within: - Fully automated rejection decisions - Hidden ranking logic without explanation - Black-box fit scoring used as final decision - High-stakes screening without auditability
+
+### FP-1.4
+Remember we are still in phase 1. I want do go with option 1 - Collaboration-First Mid-Market ATS, but before going to phase 2 lets do a summary of why this is the recommended decision based on all you have research, what we discussed and mentioning the added value and competitive advantages and which will be the main functionalities. Do not prioritize the functionalities that we discusses more but rather the ones that will give real keys of success and the feature areas that can make LTI shine above competitors. Take in a count the collaboration layer, the automation layer and the AI assistance layer that we discuss before. Be extremely honest.
+
+### FP-1.5
+go ahead
+
+### FP-1.6
+Selected option: Collaboration-First Mid-Market ATS Selected target audience: Employer-side mid-market knowledge-work companies Proceed to Phase 2: Yes Optional constraints or priorities: Create a markdown file LTI-design.md with the output
+
+### FP-1.8
+The output its great, so don't delete anything that it presented but just make sure the PRD includes the problem statement, measurable goals, main user stories, functional and non-functional requirements, acceptance criteria and success metrics. If it already have all of it then it is correct, if not then add it to the markdown file. Also remove the reference from README.md and instead place what was extracted from it.
+
+### FP-1.9
+Also make sure all the text is in english
+
+### FP-1.10
+Fix the references links, and remove in the title phase 2
 
 ---
+---
 
-You are an expert Software Analyst and Product Analyst with deep expertise in B2B SaaS, HR Tech, and Applicant Tracking Systems (ATS).
+# Prompt P-2
+
+Now that the LTI-design.md is done, lets move one with the next task. Remember that you are an expert Software Analyst and Product Analyst with deep expertise in B2B SaaS, HR Tech, and Applicant Tracking Systems (ATS).
 
 ## Objective
 Identify and describe the **3 most important use cases** for the ATS functionality or product already defined, and represent each of them with its corresponding diagram.
@@ -420,9 +449,21 @@ After the 3 use cases, include a short validation section explaining:
 
 ---
 
-# Prompt 3
+## Follow-up prompts
+
+### FP-2.1
+Perfect now append this info into the LTI-design.md
+
+### FP-2.2
+i think you didnt append it to the last file, so I still see the bugs we fix before regarding all text in english, Fix the references links, and remove in the title phase 2
+
+### FP-2.3
+this is actually the updated file, please keep this as the final version
 
 ---
+---
+
+# Prompt P-3
 
 You are a senior Software Architect and Data Modeling expert with deep expertise in Applicant Tracking Systems (ATS), B2B SaaS platforms, and business-domain data design.
 
@@ -630,240 +671,27 @@ Conclude with a short validation section explaining:
 
 ---
 
-# Prompt 4
+## Follow-up prompts
+
+### FP-3.1
+can you do it for the MVP product composed of the 3 main use cases sufficient for a first useful version of LTI, that are decribed in section 5 of the document, or this model only includes them and the full model is actually bigger?
+
+### FP-3.2
+The idea is to design the first version of the system which includes the following artifacts : 1.Descripción breve del software LTI, valor añadido y ventajas competitivas. Explicación de las funciones principales. Añadir un diagrama Lean Canvas para entender el modelo de negocio (Done in the document) 2. Descripción de los 3 casos de uso principales, con el diagrama asociado a cada uno (Done in the document) 3. Modelo de datos que cubra entidades, atributos (nombre y tipo) y relaciones ---> this is what Im asking so waht do you interpret from this text: Section 4.14 or Section 5?
+
+### FP-3.3
+ok then rewrite the whole logical data model going with this recommendation
+
+### FP-3.4
+Can you append this information in markdown format to the LTI-design.md file. Also if you need to modify any section to give clarification let me know
+
+### FP-3.5
+now that you have the 2 models are they really different? I see both are extensive
 
 ---
-
-You are a senior Software Architect with deep expertise in Applicant Tracking Systems (ATS), B2B SaaS platforms, and scalable product architecture.
-
-## Objective
-Based on the information available in the attached **LTI-design.md**, design the **first version of the LTI system architecture**.
-
-The document already contains prior work that must be treated as completed input, not as tasks to redo.
-
-Your job is to:
-1. understand the work already completed in the document,
-2. propose and compare the most suitable architecture options for the first version of LTI,
-3. discuss those options with me first,
-4. and only after I explicitly approve one architecture option, produce:
-   - **D. High-level system design**, explained in text and with an attached diagram, **not using C4 notation**
-   - **E. A C4 diagram** that goes deeper into one relevant system component or area, chosen based on the approved architecture
-
-## Source of truth
-Use the attached **LTI-design.md** as the primary source of truth.
-
-The completed work for tasks A, B, and C is already present in **sections 1 to 6** of the document.
-
-You must:
-- read and understand sections 1 to 6,
-- extract the relevant assumptions, product scope, use cases, and data model from those sections,
-- keep naming consistent with the document,
-- and ensure the proposed architecture supports what is already defined there.
-
-Do not redo sections 1 to 6.
-Do not re-create tasks A, B, or C from scratch.
-Only summarize prior work when needed to justify architectural decisions.
-
-If the document has ambiguity or gaps, make reasonable assumptions and state them clearly.
-
-## Process rules
-Your work must happen in **2 stages**.
-
-### Stage 1 — Architecture options and discussion
-Before producing any diagrams or final architecture deliverables, you must first:
-- analyze the existing system definition from sections 1 to 6,
-- identify the most viable architecture options for the first version of LTI,
-- compare them,
-- recommend one,
-- and stop there for discussion.
-
-At this stage, you must **not** generate section D or section E yet.
-
-### Stage 2 — Final architecture deliverables
-You may only proceed to Stage 2 if I explicitly approve one architecture option.
-
-Accepted examples of explicit approval include:
-- “I approve option X”
-- “Proceed with option X”
-- “Use option X and continue”
-- “Go ahead with the modular monolith option”
-- “Approved. Now create D and E”
-
-Do not infer approval implicitly.
-Do not start D or E just because I ask follow-up questions.
-Do not generate diagrams before my explicit approval.
-
-## Interaction rules
-1. Before I approve an option, remain in **Stage 1**.
-2. In Stage 1, I may ask follow-up questions to help decide.
-3. In Stage 1, you may ask brief clarifying questions if missing information would materially affect the recommendation.
-4. If information is incomplete but not critical, proceed with reasonable assumptions and state them clearly.
-5. Only after my explicit approval may you generate:
-   - **D. High-level system design**
-   - **E. C4 diagram**
-6. If my approval is ambiguous or incomplete, ask for clarification before proceeding.
-
-## Architectural framing
-The goal is to define the software architecture and system structure at a level that helps ensure the system is:
-- scalable
-- secure
-- maintainable
-- understandable for engineers and stakeholders
-- suitable for iterative product development
-
-You should reason about:
-- system boundaries
-- frontend and backend responsibilities
-- APIs
-- authentication and authorization
-- asynchronous processing
-- storage
-- search
-- notifications
-- integrations
-- observability
-- deployment/runtime implications
-- AI-assisted features if they are part of the documented scope
-
-Relevant architecture styles may include, for example:
-- modular monolith
-- layered architecture
-- hexagonal / clean architecture
-- service-oriented architecture
-- event-driven architecture
-- microservices
-- or a pragmatic hybrid
-
-Choose architecture options that are realistic for a **first production version** of LTI.
-
-## Scope constraints
-1. Base all reasoning on the completed content in sections 1 to 6 of LTI-design.md.
-2. Focus on architecture only.
-3. Do not redo product strategy, use-case modeling, or the data model.
-4. Do not produce implementation tickets, infrastructure-as-code, or low-level deployment scripts.
-5. Do not over-engineer for a hypothetical future if a simpler first-version architecture is more appropriate.
-
-## Stage 1 deliverable format
-In Stage 1, structure your answer exactly as follows.
-
-### 1. What is already defined in sections 1 to 6
-Provide a concise synthesis of the already-completed work from sections 1 to 6, focusing only on what is architecturally relevant:
-- product scope
-- key user roles
-- key workflows
-- core domain/data concepts
-- major constraints or assumptions
-- integrations or external dependencies implied by the document
-
-### 2. Architectural assumptions
-List the technical and architectural assumptions you will use to evaluate the options.
-
-### 3. Architecture options for the first version
-Propose **3 to 4 realistic architecture options** for LTI.
-
-For each option, include:
-- **Option name**
-- **Architecture style**
-- **Short description**
-- **When it is a good fit**
-- **Main strengths**
-- **Main weaknesses**
-- **Operational complexity**
-- **Scalability profile**
-- **Maintainability implications**
-- **Fit for a first-version ATS**
-- **Fit for the workflows and scope already defined in sections 1 to 6**
-
-Examples of possible option types may include:
-- modular monolith
-- modular monolith with event-driven internal workflows
-- small-service architecture
-- microservices-oriented architecture
-- hexagonal modular backend with separate frontend
-
-### 4. Comparative decision matrix
-Compare the architecture options in a table.
-
-Use at least these criteria:
-- speed of implementation
-- simplicity
-- operational complexity
-- scalability
-- maintainability
-- extensibility
-- support for integrations
-- support for asynchronous workflows
-- support for AI-assisted features
-- fit for first production version
-- risk level
-
-Score each option from 1 to 5 and explain the most important trade-offs.
-
-### 5. Recommended option
-Recommend the single best option for the first version of LTI.
-
-Include:
-- the recommended option
-- why it is the best fit
-- what it optimizes for
-- what is intentionally deferred
-- what future signals would justify evolving to a more distributed architecture
-
-### 6. Open questions or discussion points
-List the most important questions, trade-offs, or decisions I may want to discuss before approving an option.
-
-### 7. Reply format
-End Stage 1 with this exact instruction:
-
-“If you want to discuss before approval, reply with:
-- Question or concern:
-- Option(s) to discuss:
-
-If you want me to proceed with D and E, reply with:
-- Approved option:
-- Proceed with D and E: Yes
-- Optional priorities or constraints:”
-
-## Stage 2 deliverable format
-Only after I explicitly approve one architecture option, generate the following:
-
-### D. High-level system design
-Create the high-level design of the first version of LTI.
-
-Requirements:
-- explain the selected architecture clearly
-- identify the major system building blocks
-- explain responsibilities and interaction patterns
-- include integrations and external systems
-- explain synchronous and asynchronous communication where relevant
-- include security and observability considerations
-- include one complete **Mermaid** high-level architecture diagram
-- do **not** use C4 notation for section D
-
-### E. Focused C4 diagram
-Create a **C4-based architecture view** for the most relevant container or area of the approved architecture.
-
-Requirements:
-- choose the most relevant area or component to zoom into
-- justify why it is the best area to document in more depth
-- provide at least a **component-level C4 view**
-- keep it useful and not overcomplicated
-- include the diagram in diagram-as-code format
-- ensure it is consistent with the approved architecture option
-
-## Output requirements
-- Write in clear, professional English.
-- Be precise and exhaustive, but only within the requested stage.
-- In Stage 1, do not generate section D or E.
-- In Stage 2, do not redo sections 1 to 6.
-- Keep naming consistent with LTI-design.md.
-- Make the result useful for architecture discussion, engineering alignment, and implementation planning.
-
 ---
 
-# Prompt 5
-
----
+# Prompt P-4
 
 You are an expert Software Analyst and Product Analyst with deep expertise in B2B SaaS, HR Tech, and Applicant Tracking Systems (ATS).
 
@@ -1037,9 +865,16 @@ Ensure the revised PRD explicitly and clearly covers, if not already sufficientl
 
 ---
 
-# Prompt 6
+## Follow-up prompts
+
+### FP-4.1
+ok now modify the last markdown i sent you to include this. Remember you should only modify section 4
 
 ---
+---
+
+# Prompt P-5
+
 
 You are a senior Software Architect and Data Modeling expert with deep expertise in Applicant Tracking Systems (ATS), B2B SaaS platforms, and business-domain data design.
 
@@ -1292,9 +1127,273 @@ Important:
 
 ---
 
-# Prompt 7
+## Follow-up prompts
+
+### FP-5.1
+Create an updated LTI-design.md
 
 ---
+---
+
+# Prompt P-6
+
+You are a senior Software Architect with deep expertise in Applicant Tracking Systems (ATS), B2B SaaS platforms, and scalable product architecture.
+
+## Objective
+Based on the information available in the attached **LTI-design.md**, design the **first version of the LTI system architecture**.
+
+The document already contains prior work that must be treated as completed input, not as tasks to redo.
+
+Your job is to:
+1. understand the work already completed in the document,
+2. propose and compare the most suitable architecture options for the first version of LTI,
+3. discuss those options with me first,
+4. and only after I explicitly approve one architecture option, produce:
+   - **D. High-level system design**, explained in text and with an attached diagram, **not using C4 notation**
+   - **E. A C4 diagram** that goes deeper into one relevant system component or area, chosen based on the approved architecture
+
+## Source of truth
+Use the attached **LTI-design.md** as the primary source of truth.
+
+The completed work for tasks A, B, and C is already present in **sections 1 to 6** of the document.
+
+You must:
+- read and understand sections 1 to 6,
+- extract the relevant assumptions, product scope, use cases, and data model from those sections,
+- keep naming consistent with the document,
+- and ensure the proposed architecture supports what is already defined there.
+
+Do not redo sections 1 to 6.
+Do not re-create tasks A, B, or C from scratch.
+Only summarize prior work when needed to justify architectural decisions.
+
+If the document has ambiguity or gaps, make reasonable assumptions and state them clearly.
+
+## Process rules
+Your work must happen in **2 stages**.
+
+### Stage 1 — Architecture options and discussion
+Before producing any diagrams or final architecture deliverables, you must first:
+- analyze the existing system definition from sections 1 to 6,
+- identify the most viable architecture options for the first version of LTI,
+- compare them,
+- recommend one,
+- and stop there for discussion.
+
+At this stage, you must **not** generate section D or section E yet.
+
+### Stage 2 — Final architecture deliverables
+You may only proceed to Stage 2 if I explicitly approve one architecture option.
+
+Accepted examples of explicit approval include:
+- “I approve option X”
+- “Proceed with option X”
+- “Use option X and continue”
+- “Go ahead with the modular monolith option”
+- “Approved. Now create D and E”
+
+Do not infer approval implicitly.
+Do not start D or E just because I ask follow-up questions.
+Do not generate diagrams before my explicit approval.
+
+## Interaction rules
+1. Before I approve an option, remain in **Stage 1**.
+2. In Stage 1, I may ask follow-up questions to help decide.
+3. In Stage 1, you may ask brief clarifying questions if missing information would materially affect the recommendation.
+4. If information is incomplete but not critical, proceed with reasonable assumptions and state them clearly.
+5. Only after my explicit approval may you generate:
+   - **D. High-level system design**
+   - **E. C4 diagram**
+6. If my approval is ambiguous or incomplete, ask for clarification before proceeding.
+
+## Architectural framing
+The goal is to define the software architecture and system structure at a level that helps ensure the system is:
+- scalable
+- secure
+- maintainable
+- understandable for engineers and stakeholders
+- suitable for iterative product development
+
+You should reason about:
+- system boundaries
+- frontend and backend responsibilities
+- APIs
+- authentication and authorization
+- asynchronous processing
+- storage
+- search
+- notifications
+- integrations
+- observability
+- deployment/runtime implications
+- AI-assisted features if they are part of the documented scope
+
+Relevant architecture styles may include, for example:
+- modular monolith
+- layered architecture
+- hexagonal / clean architecture
+- service-oriented architecture
+- event-driven architecture
+- microservices
+- or a pragmatic hybrid
+
+Choose architecture options that are realistic for a **first production version** of LTI.
+
+## Scope constraints
+1. Base all reasoning on the completed content in sections 1 to 6 of LTI-design.md.
+2. Focus on architecture only.
+3. Do not redo product strategy, use-case modeling, or the data model.
+4. Do not produce implementation tickets, infrastructure-as-code, or low-level deployment scripts.
+5. Do not over-engineer for a hypothetical future if a simpler first-version architecture is more appropriate.
+
+## Stage 1 deliverable format
+In Stage 1, structure your answer exactly as follows.
+
+### 1. What is already defined in sections 1 to 6
+Provide a concise synthesis of the already-completed work from sections 1 to 6, focusing only on what is architecturally relevant:
+- product scope
+- key user roles
+- key workflows
+- core domain/data concepts
+- major constraints or assumptions
+- integrations or external dependencies implied by the document
+
+### 2. Architectural assumptions
+List the technical and architectural assumptions you will use to evaluate the options.
+
+### 3. Architecture options for the first version
+Propose **3 to 4 realistic architecture options** for LTI.
+
+For each option, include:
+- **Option name**
+- **Architecture style**
+- **Short description**
+- **When it is a good fit**
+- **Main strengths**
+- **Main weaknesses**
+- **Operational complexity**
+- **Scalability profile**
+- **Maintainability implications**
+- **Fit for a first-version ATS**
+- **Fit for the workflows and scope already defined in sections 1 to 6**
+
+Examples of possible option types may include:
+- modular monolith
+- modular monolith with event-driven internal workflows
+- small-service architecture
+- microservices-oriented architecture
+- hexagonal modular backend with separate frontend
+
+### 4. Comparative decision matrix
+Compare the architecture options in a table.
+
+Use at least these criteria:
+- speed of implementation
+- simplicity
+- operational complexity
+- scalability
+- maintainability
+- extensibility
+- support for integrations
+- support for asynchronous workflows
+- support for AI-assisted features
+- fit for first production version
+- risk level
+
+Score each option from 1 to 5 and explain the most important trade-offs.
+
+### 5. Recommended option
+Recommend the single best option for the first version of LTI.
+
+Include:
+- the recommended option
+- why it is the best fit
+- what it optimizes for
+- what is intentionally deferred
+- what future signals would justify evolving to a more distributed architecture
+
+### 6. Open questions or discussion points
+List the most important questions, trade-offs, or decisions I may want to discuss before approving an option.
+
+### 7. Reply format
+End Stage 1 with this exact instruction:
+
+“If you want to discuss before approval, reply with:
+- Question or concern:
+- Option(s) to discuss:
+
+If you want me to proceed with D and E, reply with:
+- Approved option:
+- Proceed with D and E: Yes
+- Optional priorities or constraints:”
+
+## Stage 2 deliverable format
+Only after I explicitly approve one architecture option, generate the following:
+
+### D. High-level system design
+Create the high-level design of the first version of LTI.
+
+Requirements:
+- explain the selected architecture clearly
+- identify the major system building blocks
+- explain responsibilities and interaction patterns
+- include integrations and external systems
+- explain synchronous and asynchronous communication where relevant
+- include security and observability considerations
+- include one complete **Mermaid** high-level architecture diagram
+- do **not** use C4 notation for section D
+
+### E. Focused C4 diagram
+Create a **C4-based architecture view** for the most relevant container or area of the approved architecture.
+
+Requirements:
+- choose the most relevant area or component to zoom into
+- justify why it is the best area to document in more depth
+- provide at least a **component-level C4 view**
+- keep it useful and not overcomplicated
+- include the diagram in diagram-as-code format
+- ensure it is consistent with the approved architecture option
+
+## Output requirements
+- Write in clear, professional English.
+- Be precise and exhaustive, but only within the requested stage.
+- In Stage 1, do not generate section D or E.
+- In Stage 2, do not redo sections 1 to 6.
+- Keep naming consistent with LTI-design.md.
+- Make the result useful for architecture discussion, engineering alignment, and implementation planning.
+
+---
+
+## Follow-up prompts
+
+### FP-6.1
+why didnt you suggested the hexagonal architecture?
+
+### FP-6.2
+ok but as an answer of some of your questions and provide more clarity on the ambiguity and MPV scope, I have updated the LTI-design.md. I want you to understand the changes specially at section 4,5 and 6 and perform your task again but applied to the new version attached.
+
+### FP-6.3
+is your suggested Option, the same architecture as Event Driven Architecture. or in Spanish: "Arquitectura orientada a eventos (EDA) ¿Qué es y por qué la necesitas? La arquitectura orientada a eventos (Event-Driven Architecture o EDA) es un estilo de diseño donde los componentes se comunican mediante eventos en lugar de llamadas directas. Es fundamental para sistemas escalables, microservicios y aplicaciones en tiempo real. Conceptos clave: Evento: Un cambio significativo de estado en el sistema (ej: "pedido creado", "pago procesado") Productor: Componente que genera y publica eventos Consumidor: Componente que reacciona a eventos Event Broker: Intermediario que enruta eventos (Apache Kafka, RabbitMQ, AWS EventBridge)" and one presented in the following links: 1. https://learn.microsoft.com/es-es/azure/architecture/guide/architecture-styles/event-driven 2. http://reactiveprogramming.io/ 3.https://solace.com/event-driven-architecture-patterns/"
+
+### FP-6.4
+yes. compare them
+
+### FP-6.5
+I want to proceed with the recommended architecture "Hexagonal modular monolith with internal domain events and async workers" and your suggested default answers for your 7 questions. Proceed with D task and E task : Yes
+
+### FP-6.6
+now I updated the LTI-design.md file with the results of D and E tasks as sections 7 and 8. Please verify if I miss something or if I need to correct something in the document to reflect the scope of the results presented in tasks D and E. The updated LTI-design.md is strictly and only the file I am attaching to this very prompt.
+
+### FP-6.7
+i want you to modify the LTI-design.md to directly apply all your suggestions to the document and present me an updated file
+
+### FP-6.8
+I am attaching the updated and complete LTI-design.md so you can verify the changes. Also I want you to complement section 7 with the reasoning being selecting such architecture, the suggested 7 options for the questions you raised. The idea is to not lose the decision taken at stage 1 but in a way to complement the section and document in general but always staying ground to the truth.Present the modifcation in the chat and also provide an updated complete markdown file.
+
+---
+---
+
+# Prompt P-7
 
 You are a senior Software Architect with deep expertise in Applicant Tracking Systems (ATS), B2B SaaS platforms, and software architecture documentation using the C4 model.
 
@@ -1503,3 +1602,13 @@ Conclude with a short section explaining:
 - Do not change the architecture unless a contradiction in the existing document absolutely requires a clearly stated assumption.
 - Keep the output fully consistent with sections 6, 7, and 8 of LTI-design.md.
 - Prefer architectural usefulness and clarity over completeness for its own sake.
+
+---
+
+## Follow-up prompts
+
+### FP-7.1
+ok now add all the results into the LTI-design.md under section 8. If you need to modify and extend the current information for Async Worker Runtime so it has the same information structure as the other components you can do it as long as you only edit section 8, but not the other sections of the document. Provide me with an updated markdown file.
+
+### FP-7.2
+Now please read the whole updated file that you just created and remove references to elements not available in the context of the document such as stage-1 in section 7, and an original focused view for the Async Worker Runtime in section 8. Ask me if you have questions or you need clarity in what to remove and place instead
